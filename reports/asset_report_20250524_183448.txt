@@ -1,0 +1,29 @@
+Asset Report - Generated at 2025-05-24 18:34:48
+
+Original Asset Data:
+------------------
+Gold: 151 g
+Retirement Funds (CNY): 4538.35
+Funds (CNY): 10074.02
+Housing Fund (CNY): 64387.62
+Stock (USD): 3144.92
+BTC: 0.08146
+USDT: 1565.3
+USDC: 0
+Savings (CNY): 71724.41
+Savings (USD): 2832.26
+Savings (GBP): 9125.85
+Savings (EUR): 1306.82
+
+Assets in USD:
+------------
+Gold: $17895.27
+CNY Assets: $21009.66
+GBP Assets: $12355.77
+EUR Assets: $1485.58
+BTC Assets: $8719.11
+USDT Assets: $1563.35
+USDC Assets: $0.00
+Direct USD Assets: $5977.18
+
+Total Assets: $69005.93 USD
