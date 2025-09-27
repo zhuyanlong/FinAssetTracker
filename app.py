@@ -47,7 +47,8 @@ def get_default_data():
         'savings_cny': Decimal('0'),
         'savings_usd': Decimal('0'),
         'savings_gbp': Decimal('0'),
-        'savings_eur': Decimal('0')
+        'savings_eur': Decimal('0'),
+        'savings_sgd': Decimal('0')
     }
 
 def get_exchange_rate(code):
@@ -84,7 +85,8 @@ def index():
                 'savings_cny': Decimal(request.form.get('savings_cny', '0')),
                 'savings_usd': Decimal(request.form.get('savings_usd', '0')),
                 'savings_gbp': Decimal(request.form.get('savings_gbp', '0')),
-                'savings_eur': Decimal(request.form.get('savings_eur', '0'))
+                'savings_eur': Decimal(request.form.get('savings_eur', '0')),
+                'savings_sgd': Decimal(request.form.get('savings_sgd', '0'))
             }
             
             # 保存数据到Redis
@@ -97,6 +99,7 @@ def index():
                 'GBP': get_exchange_rate('GBP'),
                 'EUR': get_exchange_rate('EUR'),
                 'BTC': get_exchange_rate('BTC'),
+                'SGD': get_exchange_rate('SGD'),
                 'USDT': get_exchange_rate('USDT'),
                 'USDC': get_exchange_rate('USDC')
             }
@@ -113,6 +116,7 @@ def index():
                 ),
                 'gbp': get_usd_value(form_data['savings_gbp'], rates['GBP']),
                 'eur': get_usd_value(form_data['savings_eur'], rates['EUR']),
+                'sgd': get_usd_value(form_data['savings_sgd'], rates['SGD']),
                 'btc': get_usd_value(form_data['btc'], rates['BTC']),
                 'usdt': get_usd_value(form_data['usdt'], rates['USDT']),
                 'usdc': get_usd_value(form_data['usdc'], rates['USDC'])
@@ -158,6 +162,7 @@ Savings (CNY): {form_data['savings_cny']}
 Savings (USD): {form_data['savings_usd']}
 Savings (GBP): {form_data['savings_gbp']}
 Savings (EUR): {form_data['savings_eur']}
+Savings (SGD): {form_data['savings_sgd']}
 
 Assets in USD:
 ------------
@@ -165,6 +170,7 @@ Gold: ${values_in_usd['gold']:.2f}
 CNY Assets: ${values_in_usd['cny']:.2f}
 GBP Assets: ${values_in_usd['gbp']:.2f}
 EUR Assets: ${values_in_usd['eur']:.2f}
+SGD Assets: ${values_in_usd['sgd']:.2f}
 BTC Assets: ${values_in_usd['btc']:.2f}
 USDT Assets: ${values_in_usd['usdt']:.2f}
 USDC Assets: ${values_in_usd['usdc']:.2f}
