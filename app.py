@@ -37,13 +37,13 @@ def get_default_data():
     """获取默认数据"""
     return {
         'gold_g': Decimal('0'),
+        'gold_oz': Decimal('0'),
         'retirement_funds_cny': Decimal('0'),
         'funds_cny': Decimal('0'),
+        'funds_sgd': Decimal('0'),
         'housing_fund_cny': Decimal('0'),
         'stock_usd': Decimal('0'),
         'btc': Decimal('0'),
-        'usdt': Decimal('0'),
-        'usdc': Decimal('0'),
         'savings_cny': Decimal('0'),
         'savings_usd': Decimal('0'),
         'savings_gbp': Decimal('0'),
@@ -77,11 +77,10 @@ def index():
                 'gold_oz': Decimal(request.form.get('gold_oz', '0')),
                 'retirement_funds_cny': Decimal(request.form.get('retirement_funds_cny', '0')),
                 'funds_cny': Decimal(request.form.get('funds_cny', '0')),
+                'funds_sgd': Decimal(request.form.get('funds_sgd', '0')),
                 'housing_fund_cny': Decimal(request.form.get('housing_fund_cny', '0')),
                 'stock_usd': Decimal(request.form.get('stock_usd', '0')),
                 'btc': Decimal(request.form.get('btc', '0')),
-                'usdt': Decimal(request.form.get('usdt', '0')),
-                'usdc': Decimal(request.form.get('usdc', '0')),
                 'savings_cny': Decimal(request.form.get('savings_cny', '0')),
                 'savings_usd': Decimal(request.form.get('savings_usd', '0')),
                 'savings_gbp': Decimal(request.form.get('savings_gbp', '0')),
@@ -116,10 +115,8 @@ def index():
                 ),
                 'gbp': get_usd_value(form_data['savings_gbp'], rates['GBP']),
                 'eur': get_usd_value(form_data['savings_eur'], rates['EUR']),
-                'sgd': get_usd_value(form_data['savings_sgd'], rates['SGD']),
+                'sgd': get_usd_value(form_data['savings_sgd'] + form_data['funds_sgd'], rates['SGD']),
                 'btc': get_usd_value(form_data['btc'], rates['BTC']),
-                'usdt': get_usd_value(form_data['usdt'], rates['USDT']),
-                'usdc': get_usd_value(form_data['usdc'], rates['USDC'])
             }
 
             # 计算总资产
@@ -150,32 +147,21 @@ def generate_report(form_data, values_in_usd, total_assets_usd):
 
 Original Asset Data:
 ------------------
-Gold: {form_data['gold_g']} g
-Retirement Funds (CNY): {form_data['retirement_funds_cny']}
-Funds (CNY): {form_data['funds_cny']}
-Housing Fund (CNY): {form_data['housing_fund_cny']}
-Stock (USD): {form_data['stock_usd']}
+黄金 {form_data['gold_g']} g {form_data['gold_oz']} oz
+养老金 (CNY): {form_data['retirement_funds_cny']}
+基金 (CNY): {form_data['funds_cny']}
+基金 (SGD): {form_data['funds_sgd']}
+住房公积金: {form_data['housing_fund_cny']}
+股票 (USD): {form_data['stock_usd']}
 BTC: {form_data['btc']}
-USDT: {form_data['usdt']}
-USDC: {form_data['usdc']}
-Savings (CNY): {form_data['savings_cny']}
-Savings (USD): {form_data['savings_usd']}
-Savings (GBP): {form_data['savings_gbp']}
-Savings (EUR): {form_data['savings_eur']}
-Savings (SGD): {form_data['savings_sgd']}
+流动性 (CNY): {form_data['savings_cny']}
+流动性 (USD): {form_data['savings_usd']}
+流动性 (GBP): {form_data['savings_gbp']}
+流动性 (EUR): {form_data['savings_eur']}
+流动性 (SGD): {form_data['savings_sgd']}
 
-Assets in USD:
+美元计价:
 ------------
-Gold: ${values_in_usd['gold']:.2f}
-CNY Assets: ${values_in_usd['cny']:.2f}
-GBP Assets: ${values_in_usd['gbp']:.2f}
-EUR Assets: ${values_in_usd['eur']:.2f}
-SGD Assets: ${values_in_usd['sgd']:.2f}
-BTC Assets: ${values_in_usd['btc']:.2f}
-USDT Assets: ${values_in_usd['usdt']:.2f}
-USDC Assets: ${values_in_usd['usdc']:.2f}
-Direct USD Assets: ${float(form_data['savings_usd'] + form_data['stock_usd']):.2f}
-
 Total Assets: ${float(total_assets_usd):.2f} USD
 """
     return report

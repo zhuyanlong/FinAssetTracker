@@ -49,24 +49,20 @@
             <input type="number" step="0.01" name="funds_cny" value="{{ funds_cny or 0 }}">
         </div>
         <div class="form-group">
+            <label>基金（新加坡/元）:</label>
+            <input type="number" step="0.01" name="funds_sgd" value="{{ funds_sgd or 0 }}">
+        </div>
+        <div class="form-group">
             <label>公积金（人民币/元）:</label>
             <input type="number" step="0.01" name="housing_fund_cny" value="{{ housing_fund_cny or 0 }}">
         </div>
         <div class="form-group">
-            <label>美股（美元/元）:</label>
+            <label>股票（美元/元）:</label>
             <input type="number" step="0.01" name="stock_usd" value="{{ stock_usd or 0 }}">
         </div>
         <div class="form-group">
             <label>比特币（个）:</label>
             <input type="number" step="0.00000001" name="btc" value="{{ btc or 0 }}">
-        </div>
-        <div class="form-group">
-            <label>USDT（个）:</label>
-            <input type="number" step="0.01" name="usdt" value="{{ usdt or 0 }}">
-        </div>
-        <div class="form-group">
-            <label>USDC（个）:</label>
-            <input type="number" step="0.01" name="usdc" value="{{ usdc or 0 }}">
         </div>
         <div class="form-group">
             <label>流动性（人民币/元）:</label>
