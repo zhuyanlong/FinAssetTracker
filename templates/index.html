@@ -53,6 +53,14 @@
             <input type="number" step="0.01" name="funds_sgd" value="{{ funds_sgd or 0 }}">
         </div>
         <div class="form-group">
+            <label>基金（欧元/元）:</label>
+            <input type="number" step="0.01" name="funds_eur" value="{{ funds_eur or 0 }}">
+        </div>
+        <div class="form-group">
+            <label>基金（港币/元）:</label>
+            <input type="number" step="0.01" name="funds_hkd" value="{{ funds_hkd or 0 }}">
+        </div>
+        <div class="form-group">
             <label>公积金（人民币/元）:</label>
             <input type="number" step="0.01" name="housing_fund_cny" value="{{ housing_fund_cny or 0 }}">
         </div>
@@ -83,6 +91,10 @@
         <div class="form-group">
             <label>流动性（新加坡元/元）:</label>
             <input type="number" step="0.01" name="savings_sgd" value="{{ savings_sgd or 0 }}">
+        </div>
+        <div class="form-group">
+            <label>流动性（港币/元）:</label>
+            <input type="number" step="0.01" name="savings_hkd" value="{{ savings_hkd or 0 }}">
         </div>
         <button type="submit">计算总资产</button>
     </form>

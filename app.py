@@ -41,6 +41,8 @@ def get_default_data():
         'retirement_funds_cny': Decimal('0'),
         'funds_cny': Decimal('0'),
         'funds_sgd': Decimal('0'),
+        'funds_eur': Decimal('0'),
+        'funds_hkd': Decimal('0'),
         'housing_fund_cny': Decimal('0'),
         'stock_usd': Decimal('0'),
         'btc': Decimal('0'),
@@ -48,7 +50,8 @@ def get_default_data():
         'savings_usd': Decimal('0'),
         'savings_gbp': Decimal('0'),
         'savings_eur': Decimal('0'),
-        'savings_sgd': Decimal('0')
+        'savings_sgd': Decimal('0'),
+        'savings_hkd': Decimal('0')
     }
 
 def get_exchange_rate(code):
@@ -78,6 +81,8 @@ def index():
                 'retirement_funds_cny': Decimal(request.form.get('retirement_funds_cny', '0')),
                 'funds_cny': Decimal(request.form.get('funds_cny', '0')),
                 'funds_sgd': Decimal(request.form.get('funds_sgd', '0')),
+                'funds_eur': Decimal(request.form.get('funds_eur', '0')),
+                'funds_hkd': Decimal(request.form.get('funds_hkd', '0')),
                 'housing_fund_cny': Decimal(request.form.get('housing_fund_cny', '0')),
                 'stock_usd': Decimal(request.form.get('stock_usd', '0')),
                 'btc': Decimal(request.form.get('btc', '0')),
@@ -85,7 +90,8 @@ def index():
                 'savings_usd': Decimal(request.form.get('savings_usd', '0')),
                 'savings_gbp': Decimal(request.form.get('savings_gbp', '0')),
                 'savings_eur': Decimal(request.form.get('savings_eur', '0')),
-                'savings_sgd': Decimal(request.form.get('savings_sgd', '0'))
+                'savings_sgd': Decimal(request.form.get('savings_sgd', '0')),
+                'savings_hkd': Decimal(request.form.get('savings_hkd', '0'))
             }
             
             # 保存数据到Redis
@@ -97,6 +103,7 @@ def index():
                 'CNY': get_exchange_rate('CNY'),
                 'GBP': get_exchange_rate('GBP'),
                 'EUR': get_exchange_rate('EUR'),
+                'HKD': get_exchange_rate('HKD'),
                 'BTC': get_exchange_rate('BTC'),
                 'SGD': get_exchange_rate('SGD'),
                 'USDT': get_exchange_rate('USDT'),
@@ -114,8 +121,9 @@ def index():
                     rates['CNY']
                 ),
                 'gbp': get_usd_value(form_data['savings_gbp'], rates['GBP']),
-                'eur': get_usd_value(form_data['savings_eur'], rates['EUR']),
+                'eur': get_usd_value(form_data['savings_eur'] + form_data['funds_eur'], rates['EUR']),
                 'sgd': get_usd_value(form_data['savings_sgd'] + form_data['funds_sgd'], rates['SGD']),
+                'hkd': get_usd_value(form_data['savings_hkd'] + form_data['funds_hkd'], rates['HKD']),
                 'btc': get_usd_value(form_data['btc'], rates['BTC']),
             }
 
@@ -151,6 +159,8 @@ Original Asset Data:
 养老金 (CNY): {form_data['retirement_funds_cny']}
 基金 (CNY): {form_data['funds_cny']}
 基金 (SGD): {form_data['funds_sgd']}
+基金 (EUR): {form_data['funds_eur']}
+基金 (HKD): {form_data['funds_hkd']}
 住房公积金: {form_data['housing_fund_cny']}
 股票 (USD): {form_data['stock_usd']}
 BTC: {form_data['btc']}
@@ -159,6 +169,7 @@ BTC: {form_data['btc']}
 流动性 (GBP): {form_data['savings_gbp']}
 流动性 (EUR): {form_data['savings_eur']}
 流动性 (SGD): {form_data['savings_sgd']}
+流动性 (HKD): {form_data['savings_hkd']}
 
 美元计价:
 ------------
