@@ -99,8 +99,9 @@
         <button type="submit">计算总资产</button>
     </form>
     
-    {% if total_assets_usd is defined %}
+    {% if total_assets_usd is defined and total_savings_usd is defined%}
     <div class="result">
+        <p>可用流动性: {{ "%.2f"|format(total_savings_usd) }} 美元</p>
         <p>总资产: {{ "%.2f"|format(total_assets_usd) }} 美元</p>
     </div>
     {% endif %}

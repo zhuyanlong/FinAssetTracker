@@ -126,10 +126,17 @@ def index():
                 'hkd': get_usd_value(form_data['savings_hkd'] + form_data['funds_hkd'], rates['HKD']),
                 'btc': get_usd_value(form_data['btc'], rates['BTC']),
             }
+            savings_in_usd = {
+                'cny': get_usd_value(form_data['savings_cny'], rates['CNY']),
+                'gbp': get_usd_value(form_data['savings_gbp'], rates['GBP']),
+                'eur': get_usd_value(form_data['savings_eur'], rates['EUR']),
+                'sgd': get_usd_value(form_data['savings_sgd'], rates['SGD']),
+                'hkd': get_usd_value(form_data['savings_hkd'], rates['HKD']),
+            }
 
             # 计算总资产
             total_assets_usd = sum(values_in_usd.values()) + form_data['savings_usd'] + form_data['stock_usd']
-
+            total_savings_usd = sum(savings_in_usd.values())
             report_content = generate_report(form_data, values_in_usd, total_assets_usd)
             report_path = save_report(report_content)
 
@@ -138,6 +145,7 @@ def index():
                 'index.html',
                 **form_data,
                 total_assets_usd=float(total_assets_usd),
+                total_savings_usd=float(total_savings_usd),
                 asset_distribution=values_in_usd,
                 report_path=report_path
             )
@@ -173,7 +181,7 @@ BTC: {form_data['btc']}
 
 美元计价:
 ------------
-Total Assets: ${float(total_assets_usd):.2f} USD
+总资产: ${float(total_assets_usd):.2f} USD
 """
     return report
 
