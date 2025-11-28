@@ -8,6 +8,7 @@ import os
 redis_client = redis.Redis(host='localhost', port=6379, db=0)
 app = Flask(__name__)
 CACHE_KEY = 'asset_data'  # Redis 缓存键名
+GRAMS_TO_OUNCES_TROY = Decimal('0.0321507')
 
 def save_to_redis(data):
     """将数据保存到Redis"""
@@ -67,8 +68,7 @@ def get_usd_value(money, rate):
     return (Decimal('1') / rate) * money if rate != Decimal('0') else Decimal('0')
 
 def get_gold_value(grams, oz, rate):
-    GRAMS_TO_OUNCES = Decimal('0.03527396')
-    ounces = grams * GRAMS_TO_OUNCES + oz
+    ounces = grams * GRAMS_TO_OUNCES_TROY + oz
     return ounces * (Decimal('1') / rate) if rate != Decimal('0') else Decimal('0')
 
 @app.route('/', methods=['GET', 'POST'])
@@ -138,8 +138,9 @@ def index():
             total_savings_usd = sum(savings_in_usd.values())
             available_liquidity_ratio = total_savings_usd / total_assets_usd * 100
             gold_ratio = values_in_usd['gold'] / total_assets_usd * 100
-            btc_ratio = (values_in_usd['btc'] + form_data['btc_stock_usd']) / total_assets_usd * 100
-            report_content = generate_report(form_data, values_in_usd, total_assets_usd)
+            total_btc = values_in_usd['btc'] + form_data['btc_stock_usd']
+            btc_ratio = total_btc / total_assets_usd * 100
+            report_content = generate_report(form_data, total_assets_usd, total_savings_usd, values_in_usd, total_btc)
             report_path = save_report(report_content)
 
             # 返回模板，添加报告文件路径
@@ -161,7 +162,7 @@ def index():
     saved_data = load_from_redis()
     return render_template('index.html', **saved_data)
 
-def generate_report(form_data, values_in_usd, total_assets_usd):
+def generate_report(form_data, total_assets_usd, total_savings_usd, values_in_usd, total_btc):
     """生成报告内容"""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     report = f"""Asset Report - Generated at {timestamp}
@@ -187,6 +188,9 @@ BTC: {form_data['btc']}
 
 美元计价:
 ------------
+总流动性: ${float(total_savings_usd):.2f} USD
+黄金: ${float(values_in_usd['gold']):.2f} USD
+比特币: ${float(total_btc):.2f} USD
 总资产: ${float(total_assets_usd):.2f} USD
 """
     return report
