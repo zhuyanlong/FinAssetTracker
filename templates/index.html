@@ -65,6 +65,10 @@
             <input type="number" step="0.01" name="housing_fund_cny" value="{{ housing_fund_cny or 0 }}">
         </div>
         <div class="form-group">
+            <label>存款（英镑/元）:</label>
+            <input type="number" step="0.01" name="deposit_gbp" value="{{ deposit_gbp or 0 }}">
+        </div>
+        <div class="form-group">
             <label>股票（美元/元）:</label>
             <input type="number" step="0.01" name="stock_usd" value="{{ stock_usd or 0 }}">
         </div>
@@ -73,16 +77,16 @@
             <input type="number" step="0.00000001" name="btc" value="{{ btc or 0 }}">
         </div>
         <div class="form-group">
+            <label>比特币股票（美元/元）:</label>
+            <input type="number" step="0.01" name="btc_stock_usd" value="{{ btc_stock_usd or 0 }}">
+        </div>
+        <div class="form-group">
             <label>流动性（人民币/元）:</label>
             <input type="number" step="0.01" name="savings_cny" value="{{ savings_cny or 0 }}">
         </div>
         <div class="form-group">
             <label>流动性（美元/元）:</label>
             <input type="number" step="0.01" name="savings_usd" value="{{ savings_usd or 0 }}">
-        </div>
-        <div class="form-group">
-            <label>流动性（英镑/元）:</label>
-            <input type="number" step="0.01" name="savings_gbp" value="{{ savings_gbp or 0 }}">
         </div>
         <div class="form-group">
             <label>流动性（欧元/元）:</label>
@@ -99,9 +103,12 @@
         <button type="submit">计算总资产</button>
     </form>
     
-    {% if total_assets_usd is defined and total_savings_usd is defined%}
+    {% if total_assets_usd is defined and total_savings_usd is defined and gold_ratio is defined and btc_ratio is defined%}
     <div class="result">
         <p>可用流动性: {{ "%.2f"|format(total_savings_usd) }} 美元</p>
+        <p>可用流动性占总资产比例: {{ "%.2f"|format(available_liquidity_ratio) }} </p>
+        <p>黄金占总资产比例: {{ "%.2f"|format(gold_ratio) }} </p>
+        <p>比特币占总资产比例: {{ "%.2f"|format(btc_ratio) }} </p>
         <p>总资产: {{ "%.2f"|format(total_assets_usd) }} 美元</p>
     </div>
     {% endif %}

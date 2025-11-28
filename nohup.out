@@ -5629,3 +5629,193 @@ API请求失败: ('Connection aborted.', ConnectionResetError(104, 'Connection r
 45.95.169.130 - - [29/Mar/2025 12:11:27] code 400, message Bad HTTP/0.9 request type ('\x00\x00\x00\x11\x00\x00\x01é\x00\x01\x00\x00\x00ÿÿÿÿ\x01\x00\x00\x00\x00\x00\x00\x00')
 45.95.169.130 - - [29/Mar/2025 12:11:27] "[35m[1m\x00\x00\x00\x11\x00\x00\x01é\x00\x01\x00\x00\x00ÿÿÿÿ\x01\x00\x00\x00\x00\x00\x00\x00\x0c\x02\x00\x00\x00\x10MyCustomAssembly\x05\x01\x00\x00\x00[0m" HTTPStatus.BAD_REQUEST -
 54.191.216.93 - - [29/Mar/2025 13:46:46] "GET / HTTP/1.1" 200 -
+nohup: ignoring input
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 2, in <module>
+    import redis
+ModuleNotFoundError: No module named 'redis'
+nohup: ignoring input
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str
+Traceback (most recent call last):
+  File "/home/celia/FinAssetTracker/update_rate.py", line 15, in <module>
+    API_URL = "https://api.currencyapi.com/v3/latest?apikey=" + CURRENCY_API_KEY
+TypeError: can only concatenate str (not "NoneType") to str

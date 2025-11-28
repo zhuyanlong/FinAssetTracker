@@ -44,11 +44,12 @@ def get_default_data():
         'funds_eur': Decimal('0'),
         'funds_hkd': Decimal('0'),
         'housing_fund_cny': Decimal('0'),
+        'deposit_gbp': Decimal('0'),
         'stock_usd': Decimal('0'),
         'btc': Decimal('0'),
+        'btc_stock_usd': Decimal('0'),
         'savings_cny': Decimal('0'),
         'savings_usd': Decimal('0'),
-        'savings_gbp': Decimal('0'),
         'savings_eur': Decimal('0'),
         'savings_sgd': Decimal('0'),
         'savings_hkd': Decimal('0')
@@ -86,9 +87,10 @@ def index():
                 'housing_fund_cny': Decimal(request.form.get('housing_fund_cny', '0')),
                 'stock_usd': Decimal(request.form.get('stock_usd', '0')),
                 'btc': Decimal(request.form.get('btc', '0')),
+                'btc_stock_usd': Decimal(request.form.get('btc_stock_usd', '0')),
                 'savings_cny': Decimal(request.form.get('savings_cny', '0')),
                 'savings_usd': Decimal(request.form.get('savings_usd', '0')),
-                'savings_gbp': Decimal(request.form.get('savings_gbp', '0')),
+                'deposit_gbp': Decimal(request.form.get('deposit_gbp', '0')),
                 'savings_eur': Decimal(request.form.get('savings_eur', '0')),
                 'savings_sgd': Decimal(request.form.get('savings_sgd', '0')),
                 'savings_hkd': Decimal(request.form.get('savings_hkd', '0'))
@@ -105,9 +107,7 @@ def index():
                 'EUR': get_exchange_rate('EUR'),
                 'HKD': get_exchange_rate('HKD'),
                 'BTC': get_exchange_rate('BTC'),
-                'SGD': get_exchange_rate('SGD'),
-                'USDT': get_exchange_rate('USDT'),
-                'USDC': get_exchange_rate('USDC')
+                'SGD': get_exchange_rate('SGD')
             }
 
             # 计算各类资产的美元价值
@@ -120,7 +120,7 @@ def index():
                     form_data['housing_fund_cny'],
                     rates['CNY']
                 ),
-                'gbp': get_usd_value(form_data['savings_gbp'], rates['GBP']),
+                'gbp': get_usd_value(form_data['deposit_gbp'], rates['GBP']),
                 'eur': get_usd_value(form_data['savings_eur'] + form_data['funds_eur'], rates['EUR']),
                 'sgd': get_usd_value(form_data['savings_sgd'] + form_data['funds_sgd'], rates['SGD']),
                 'hkd': get_usd_value(form_data['savings_hkd'] + form_data['funds_hkd'], rates['HKD']),
@@ -128,15 +128,17 @@ def index():
             }
             savings_in_usd = {
                 'cny': get_usd_value(form_data['savings_cny'], rates['CNY']),
-                'gbp': get_usd_value(form_data['savings_gbp'], rates['GBP']),
                 'eur': get_usd_value(form_data['savings_eur'], rates['EUR']),
                 'sgd': get_usd_value(form_data['savings_sgd'], rates['SGD']),
                 'hkd': get_usd_value(form_data['savings_hkd'], rates['HKD']),
             }
 
             # 计算总资产
-            total_assets_usd = sum(values_in_usd.values()) + form_data['savings_usd'] + form_data['stock_usd']
+            total_assets_usd = sum(values_in_usd.values()) + form_data['savings_usd'] + form_data['stock_usd']  + form_data['btc_stock_usd'] 
             total_savings_usd = sum(savings_in_usd.values())
+            available_liquidity_ratio = total_savings_usd / total_assets_usd * 100
+            gold_ratio = values_in_usd['gold'] / total_assets_usd * 100
+            btc_ratio = (values_in_usd['btc'] + form_data['btc_stock_usd']) / total_assets_usd * 100
             report_content = generate_report(form_data, values_in_usd, total_assets_usd)
             report_path = save_report(report_content)
 
@@ -146,6 +148,9 @@ def index():
                 **form_data,
                 total_assets_usd=float(total_assets_usd),
                 total_savings_usd=float(total_savings_usd),
+                gold_ratio=float(gold_ratio),
+                btc_ratio=float(btc_ratio),
+                available_liquidity_ratio=float(available_liquidity_ratio),
                 asset_distribution=values_in_usd,
                 report_path=report_path
             )
@@ -170,11 +175,12 @@ Original Asset Data:
 基金 (EUR): {form_data['funds_eur']}
 基金 (HKD): {form_data['funds_hkd']}
 住房公积金: {form_data['housing_fund_cny']}
+存款 (GBP): {form_data['deposit_gbp']}
 股票 (USD): {form_data['stock_usd']}
+比特币股票 (USD): {form_data['btc_stock_usd']}
 BTC: {form_data['btc']}
 流动性 (CNY): {form_data['savings_cny']}
 流动性 (USD): {form_data['savings_usd']}
-流动性 (GBP): {form_data['savings_gbp']}
 流动性 (EUR): {form_data['savings_eur']}
 流动性 (SGD): {form_data['savings_sgd']}
 流动性 (HKD): {form_data['savings_hkd']}
