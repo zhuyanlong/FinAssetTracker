@@ -124,21 +124,23 @@ def index():
                 'eur': get_usd_value(form_data['savings_eur'] + form_data['funds_eur'], rates['EUR']),
                 'sgd': get_usd_value(form_data['savings_sgd'] + form_data['funds_sgd'], rates['SGD']),
                 'hkd': get_usd_value(form_data['savings_hkd'] + form_data['funds_hkd'], rates['HKD']),
-                'btc': get_usd_value(form_data['btc'], rates['BTC']),
+                'btc': get_usd_value(form_data['btc'], rates['BTC']) + form_data['btc_stock_usd'],
+                'usd': form_data['savings_usd'] + form_data['stock_usd']
             }
             savings_in_usd = {
                 'cny': get_usd_value(form_data['savings_cny'], rates['CNY']),
                 'eur': get_usd_value(form_data['savings_eur'], rates['EUR']),
                 'sgd': get_usd_value(form_data['savings_sgd'], rates['SGD']),
                 'hkd': get_usd_value(form_data['savings_hkd'], rates['HKD']),
+                'usd': form_data['savings_usd']
             }
 
             # 计算总资产
-            total_assets_usd = sum(values_in_usd.values()) + form_data['savings_usd'] + form_data['stock_usd']  + form_data['btc_stock_usd'] 
+            total_assets_usd = sum(values_in_usd.values())
             total_savings_usd = sum(savings_in_usd.values())
             available_liquidity_ratio = total_savings_usd / total_assets_usd * 100
             gold_ratio = values_in_usd['gold'] / total_assets_usd * 100
-            total_btc = values_in_usd['btc'] + form_data['btc_stock_usd']
+            total_btc = values_in_usd['btc']
             btc_ratio = total_btc / total_assets_usd * 100
             report_content = generate_report(form_data, total_assets_usd, total_savings_usd, values_in_usd, total_btc)
             report_path = save_report(report_content)

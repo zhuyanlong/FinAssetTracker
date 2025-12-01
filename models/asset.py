@@ -25,6 +25,8 @@ class AssetData(BaseModel):
     funds_eur : Decimal = Decimal('0')
     savings_eur: Decimal = Decimal('0')
 
+    deposit_gbp: Decimal = Decimal('0')
+
     savings_usd: Decimal = Decimal('0')
     stock_usd: Decimal = Decimal('0')
     
