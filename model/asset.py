@@ -22,9 +22,6 @@ class AssetData(BaseModel):
     btc: Decimal = Decimal('0')
     btc_stock_usd: Decimal = Decimal('0')
 
-    funds_eur : Decimal = Decimal('0')
-    savings_eur: Decimal = Decimal('0')
-
     deposit_gbp: Decimal = Decimal('0')
 
     savings_usd: Decimal = Decimal('0')
