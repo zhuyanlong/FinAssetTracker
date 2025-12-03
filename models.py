@@ -1,4 +1,5 @@
 from sqlmodel import SQLModel, Field
+from typing import Optional
 from decimal import Decimal
 from datetime import datetime
 from typing import Optional
@@ -35,3 +36,13 @@ class AssetSnapshot(AssetDataModelConfig, table=True):
 
     savings_usd: Decimal = Field(default=Decimal('0'), max_digits=15, decimal_places=2)
     stock_usd: Decimal = Field(default=Decimal('0'), max_digits=15, decimal_places=2)
+
+class AssetResults(SQLModel):
+    total_assets_usd: Decimal
+    total_savings_usd: Decimal
+    available_liquidity_ratio: Decimal
+    gold_ratio: Decimal
+    btc_ratio: Decimal
+
+    report_path: Optional[str] = None
+    message: Optional[str] = None
