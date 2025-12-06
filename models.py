@@ -15,7 +15,7 @@ class AssetSnapshot(AssetDataModelConfig, table=True):
 
     gold_g: Decimal = Field(default=Decimal('0'), max_digits=18, decimal_places=2)
     gold_oz: Decimal = Field(default=Decimal('0'), max_digits=18, decimal_places=2)
-    btc: Decimal = Field(default=Decimal('0'), max_digits=18, decimal_places=2)
+    btc: Decimal = Field(default=Decimal('0'), max_digits=18, decimal_places=8)
 
     btc_stock_usd: Decimal = Field(default=Decimal('0'), max_digits=15, decimal_places=2)
     deposit_gbp: Decimal = Field(default=Decimal('0'), max_digits=15, decimal_places=2)

@@ -12,6 +12,7 @@ from database import get_db, create_db_and_tables
 app = FastAPI()
 redis_client = redis.Redis(host='localhost', port=6379, db=0)
 GRAMS_TO_OUNCES_TROY = Decimal('0.0321507')
+CACHE_KEY = 'asset_data'
 
 origins = [
     "https://finassettrackerfrontend.netlify.app",
@@ -25,7 +26,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def get_exchange_rate(code):
+def save_to_redis(data: AssetSnapshot):
+    try: 
+        serializable_data = data.model_dump_json()
+        redis_client.set(CACHE_KEY, serializable_data)
+        return True
+    except Exception as e:
+        logging.error(f"Error saving to Redis: {str(e)}", exc_info=True)
+        return False
+
+def load_from_redis() -> AssetSnapshot:
+    try:
+        data = redis_client.get(CACHE_KEY)
+        if data:
+            data_json_string = data.decode('utf-8')
+            asset = AssetSnapshot.model_validate_json(data_json_string)
+            return asset
+        return None
+    except Exception as e:
+        logging.error(f"Error loading from Redis: {str(e)}", exc_info=True)
+        return None
+
+def get_exchange_rate(code: str):
     try:
         rate = redis_client.get(code)
         return Decimal(rate.decode('utf-8')) if rate else Decimal('0')
@@ -42,7 +64,7 @@ def get_gold_value(grams: Decimal, oz: Decimal, rate: Decimal):
 
 def get_value(field) -> Decimal: 
     if field is None or str(field) == "":
-        "return Decimal('0)"
+        return Decimal('0')
     return Decimal(str(field))
 
 @app.on_event("startup")
@@ -51,13 +73,18 @@ def on_startup():
 
 @app.get("/", response_model=AssetSnapshot)
 def get_latest_asset_data(db: Session = Depends(get_db)):
-    statement = select(AssetSnapshot).order_by(desc(AssetSnapshot.id)).limit(1)
-    latest_snapshot = db.exec(statement).first()
+    cached_data = load_from_redis()
 
-    if not latest_snapshot:
-        raise HTTPException(status_code=404, detail="No asset data found in the database.")
+    if cached_data:
+        return cached_data
     
-    return latest_snapshot
+    statement = select(AssetSnapshot).order_by(desc(AssetSnapshot.id)).limit(1)
+    db_snapshot = db.exec(statement).first()
+
+    if not db_snapshot:
+        raise HTTPException(status_code=404, detail="No asset data found in the database.")
+    save_to_redis(db_snapshot)
+    return db_snapshot
 
 @app.post("/update_assets", response_model=AssetResults)
 async def update_assets(
@@ -65,6 +92,8 @@ async def update_assets(
     db: Session = Depends(get_db)
 ):
     try:
+        # save data to redis
+        save_to_redis(data)
         rates = {
             'XAU': get_exchange_rate('XAU'),
             'CNY': get_exchange_rate('CNY'),
@@ -128,6 +157,15 @@ async def update_assets(
     except Exception as e:
         logging.error(f"Asset calculation or DB error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+
+@app.get("/clear")
+async def clear_data(db: Session = Depends(get_db)):
+    try:
+        redis_client.delete(CACHE_KEY)
+        return {"message": "Data cache cleared successfully."}
+    except Exception as e:
+        logging.error(f"Redis clear error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to clear Redis cache.")
 
 if __name__ == "__main__":
 
