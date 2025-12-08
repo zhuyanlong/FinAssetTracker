@@ -43,6 +43,8 @@ class AssetResults(SQLModel):
     available_liquidity_ratio: Decimal
     gold_ratio: Decimal
     btc_ratio: Decimal
+    weighted_risk_score: Decimal
+    speculative_ratio: Decimal
 
     report_path: Optional[str] = None
     message: Optional[str] = None

@@ -35,7 +35,7 @@ RISK_WEIGHTS = {
     'retirement': Decimal('1.0'),   # 养老金
     'funds_fixed': Decimal('2.0'),  # 债券/固收基金
     'funds_mixed': Decimal('4.0'),  # 混合型基金
-    'gold': Decimal('7.0'),         # 黄金
+    'gold': Decimal('5.0'),         # 黄金
     'stock': Decimal('8.0'),        # 股票
     'btc': Decimal('10.0')          # 比特币
 }
