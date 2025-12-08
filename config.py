@@ -39,3 +39,17 @@ RISK_WEIGHTS = {
     'stock': Decimal('8.0'),        # 股票
     'btc': Decimal('10.0')          # 比特币
 }
+
+# ===========================
+# COINBASE 配置
+# ===========================
+COINBASE_API_KEY = os.environ.get("COINBASE_API_KEY")
+COINBASE_API_SECRET = os.environ.get("COINBASE_API_SECRET")
+
+PRODUCT_ID = "BTC-USD"
+GRANULARITY = "ONE_DAY"
+LIMIT = 300
+
+REQUEST_PATH = f"/api/v3/brokerage/products/{PRODUCT_ID}/candles"
+BASE_URL = "https://api.coinbase.com"
+METHOD = "GET"
