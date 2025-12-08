@@ -11,12 +11,18 @@ import os
 
 from models import AssetSnapshot, AssetResults
 from database import get_db, create_db_and_tables
+from config import (
+    RISK_WEIGHTS,
+    GRAMS_TO_OUNCES_TROY,
+    CACHE_KEY,
+    REPORT_DIR,
+    REDIS_HOST,
+    REDIS_DB,
+    REDIS_PORT
+)
 
 app = FastAPI()
-redis_client = redis.Redis(host='localhost', port=6379, db=0)
-GRAMS_TO_OUNCES_TROY = Decimal('0.0321507')
-CACHE_KEY = 'asset_data'
-REPORT_DIR = 'reports'
+redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
 
 origins = [
     "https://finassettrackerfrontend.netlify.app",
