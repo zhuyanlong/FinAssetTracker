@@ -1,10 +1,13 @@
 import redis
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from sqlmodel import Session, select, desc
 from decimal import Decimal
 import logging
 import uvicorn
+from datetime import datetime
+import os
 
 from models import AssetSnapshot, AssetResults
 from database import get_db, create_db_and_tables
@@ -13,6 +16,7 @@ app = FastAPI()
 redis_client = redis.Redis(host='localhost', port=6379, db=0)
 GRAMS_TO_OUNCES_TROY = Decimal('0.0321507')
 CACHE_KEY = 'asset_data'
+REPORT_DIR = 'reports'
 
 origins = [
     "https://finassettrackerfrontend.netlify.app",
@@ -143,16 +147,25 @@ async def update_assets(
             total_btc_usd = values_in_usd['btc']
             btc_ratio = total_btc_usd / total_assets_usd * 100
 
-        db.add(data)
-        db.commit()
-        db.refresh(data)
-        return AssetResults(
+        results = AssetResults(
             total_assets_usd=total_assets_usd,
             total_savings_usd=total_savings_usd,
             available_liquidity_ratio=available_liquidity_ratio,
             gold_ratio=gold_ratio,
             btc_ratio=btc_ratio
         )
+
+        report_content = generate_report(data, results)
+        filepath = save_report(report_content)
+
+        filename_only = os.path.basename(filepath)
+        results.report_path = filename_only
+
+        db.add(data)
+        db.commit()
+        db.refresh(data)
+
+        return results
     
     except Exception as e:
         logging.error(f"Asset calculation or DB error: {e}", exc_info=True)
@@ -167,6 +180,64 @@ async def clear_data(db: Session = Depends(get_db)):
         logging.error(f"Redis clear error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to clear Redis cache.")
 
-if __name__ == "__main__":
+@app.get("/download_report/{filename}")
+def download_report(filename: str):
+    """
+    接收文件名，从'reports'目录读取文件，并将其发送给客户端下载
+    """
+    filepath = os.path.join(REPORT_DIR, filename)
+    if not os.path.exists(filepath):
+        raise HTTPException(status_code=404, detail="Report file not found.")
+    
+    return FileResponse(
+        path=filepath,
+        media_type='text/plain',
+        filename=filename
+    )
 
+def generate_report(data: AssetSnapshot, results: AssetResults) -> str:
+    """生成报告内容"""
+    timestamp = datetime.now().strftime("%Y-%m-%d")
+    report = f"""Asset Report - Generated at {timestamp}
+
+Original Asset Data:
+-------------------
+黄金 {data.gold_g} g {data.gold_oz} oz
+养老金(CNY) {data.retirement_funds_cny}
+基金(CNY) {data.funds_cny}
+住房公积金(CNY) {data.housing_fund_cny}
+储蓄(CNY) {data.savings_cny}
+比特币(个) {data.btc}
+比特币股票(USD) {data.btc_stock_usd}
+基金(HDK) {data.funds_hkd}
+储蓄(HKD) {data.savings_hkd}
+基金(SGD) {data.funds_sgd}
+储蓄(SGD) {data.savings_sgd}
+基金(EUR) {data.funds_eur}
+储蓄(EUR) {data.savings_eur}
+存款(GBP) {data.deposit_gbp}
+股票(USD) {data.stock_usd}
+储蓄(USD) {data.savings_usd}
+
+美元计价:
+------------------
+总资产: {results.total_assets_usd:.2f} USD
+总储蓄: {results.total_savings_usd:.2f} USD
+黄金资产占比: {results.gold_ratio:.2f}%
+比特币资产占比: {results.btc_ratio:.2f}%
+"""
+    return report
+
+def save_report(report_content: str):
+    """保存报告到文件"""
+    filename = f"asset_report_{datetime.now().strftime('%Y%m%d')}.txt"
+    filepath = os.path.join(REPORT_DIR, filename)
+
+    os.makedirs(REPORT_DIR, exist_ok=True)
+
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(report_content)
+    return filepath
+
+if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8001)
