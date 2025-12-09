@@ -2,52 +2,39 @@ import requests
 import pandas as pd
 import numpy as np
 from decimal import Decimal
-from datetime import datetime, timedelta, timezone
-from config import (
-    COINBASE_API_KEY,
-    COINBASE_API_SECRET,
-    GRANULARITY,
-    LIMIT,
-    REQUEST_PATH,
-    BASE_URL,
-    METHOD
-)
 
-def get_coinbase_headers(method, request_path, body=""):
-    pass
-
-def fetch_btc_history(days: int = 90, granularity: int = 86400):
-    """
-    从Coinbase Exchane API获取BTC-USD最近days填的历史OHLC数据
-    granularity: 采样频率（秒），默认 86400 = dail
-    """
-    end = datetime.now(timezone.utc)
-    start = end - timedelta(days=days)
-
-    start_iso = start.isoformat().replace('+00:00', 'Z')
-    end_iso = end.isoformat().replace('+00:00', 'Z')
-    url = (
-        "https://api.pro.coinbase.com/products/BTC-USD/candles"
-        f"?start={start_iso}&end={end_iso}&granularity={granularity}"
-    )
-
+def fetch_btc_history_kraken(pair: str = 'XBTUSD', interval_minutes: int = 1440):
+    url = "https://api.kraken.com/0/public/OHLC"
+    params = {
+        'pair': pair,
+        'interval': interval_minutes,
+        # since 参数可以省略，直接获取最新的 720 条数据
+    }
     try:
-        resp = requests.get(url, timeout=10)
+        resp = requests.get(url, params=params, timeout=15)
         resp.raise_for_status()
         data = resp.json()
 
-        if not data or not isinstance(data, list) or len(data) == 0:
-            print("错误: API 返回数据为空或格式不正确。")
+        if data['error']:
+            print(f"Kraken API 错误: {data['error']}")
             return None
         
-        df = pd.DataFrame(data, columns=['time', 'low', 'high', 'open', 'close', 'volume'])
+        asset_key = [k for k in data['result'].keys() if k != 'last'][0]
+        ohlc_data = data['result'][asset_key]
+        df = pd.DataFrame(ohlc_data, columns=[
+            'time', 'open', 'high', 'low', 'close', 'vwap', 'volume', 'count'
+        ])
+        df['close'] = df['close'].astype(float)
+        df['date'] = pd.to_datetime(df['time'], unit='s', utc=True)
 
-        df['date'] = pd.to_datetime(df['time'], unit='s')
-        df = df.sort_values('date')
-        df = df.reset_index(drop=True)
+        if len(df) < 2:
+             print("数据点不足以进行风险计算。")
+             return None
+
         return df
+    
     except requests.exceptions.RequestException as e:
-        print(f"API请求失败: {e}")
+        print(f"Kraken API 请求失败: {e}")
         return None
     except Exception as e:
         print(f"数据处理失败: {e}")
@@ -95,18 +82,11 @@ def calculate_btc_risk_factor(prices: pd.Series) -> Decimal:
     return Decimal(str(round(risk, 2)))
 
 def main():
-    df = fetch_btc_history(days=300)
+    df = fetch_btc_history_kraken()
     if df is not None:
         close_prices = df['close']
         btc_risk = calculate_btc_risk_factor(close_prices)
-        volatility = calculate_btc_risk_factor(close_prices.iloc[:1]).__getattribute__('_val')
-        max_dd = calculate_btc_risk_factor(close_prices.iloc[:1]).__getattribute__('_val')
-        print("-" * 30)
-        print(f"基于 {len(close_prices)} 天数据的风险分析")
-        print("动态BTC风险系数 (0-10):", btc_risk)
-        print("-" * 30)
-    else:
-        print("无法计算风险系数：未能获取历史数据。")
+        print(btc_risk)
 
 if __name__ == "__main__":
     main()
