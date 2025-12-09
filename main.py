@@ -1,5 +1,5 @@
 import redis
-from fastapi import FastAPI, Depends, HTTPException, APIRouter
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from sqlmodel import Session, select, desc
@@ -11,6 +11,7 @@ import os
 
 from models import AssetSnapshot, AssetResults
 from database import get_db, create_db_and_tables
+from risk_engine import update_and_cache_btc_risk
 from config import (
     RISK_WEIGHTS,
     GRAMS_TO_OUNCES_TROY,
@@ -18,7 +19,8 @@ from config import (
     REPORT_DIR,
     REDIS_HOST,
     REDIS_DB,
-    REDIS_PORT
+    REDIS_PORT,
+    BTC_RISK_KEY
 )
 
 app = FastAPI()
@@ -35,6 +37,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+def get_btc_risk_score(redis_client) -> Decimal:
+    """从Redis获取风险分, 如果失败, 则计算并存入Redis"""
+    cached_risk = redis_client.get(BTC_RISK_KEY)
+    if cached_risk:
+        try:
+            return Decimal(cached_risk.decode('utf-8'))
+        except Exception:
+            logging.warning("Cached BTC risk factor is corrupted. Recalculating.")
+    return update_and_cache_btc_risk()
 
 def save_to_redis(data: AssetSnapshot):
     try: 
@@ -186,7 +198,8 @@ async def update_assets(
 
         # 6. 比特币(直接持有 + 相关股票持有)
         btc_val = values_in_usd['btc']
-        risk_weighted_sum += btc_val * RISK_WEIGHTS['btc']
+        btc_risk_score = get_btc_risk_score(redis_client)
+        risk_weighted_sum += btc_val * btc_risk_score
 
         # 计算最终加权分数
         weighted_risk_score = Decimal('0')

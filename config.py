@@ -39,3 +39,6 @@ RISK_WEIGHTS = {
     'stock': Decimal('8.0'),        # 股票
     'btc': Decimal('10.0')          # 比特币
 }
+
+# Redis Key for BTC Risk Factor
+BTC_RISK_KEY = 'btc_volatility_risk_score'

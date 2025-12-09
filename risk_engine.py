@@ -1,7 +1,35 @@
 import requests
 import pandas as pd
 import numpy as np
+import redis
+import logging
+
 from decimal import Decimal
+from config import (
+    REDIS_HOST,
+    REDIS_PORT,
+    REDIS_DB,
+    BTC_RISK_KEY,
+    RISK_WEIGHTS
+)
+
+RISK_REDIS_CLIENT = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
+
+def update_and_cache_btc_risk() -> Decimal:
+    """
+    获取 BTC 历史数据，计算风险系数，并将结果存储到 Redis。
+    """
+    df = fetch_btc_history_kraken()
+    if df is None:
+        risk_score = RISK_WEIGHTS['btc']
+    else:
+        close_prices = df['close']
+        risk_score = calculate_btc_risk_factor(close_prices)
+    try:
+        RISK_REDIS_CLIENT.set(BTC_RISK_KEY, str(risk_score), ext=43200)
+    except Exception as e:
+        logging.error(f"Error saving to Redis: {str(e)}", exc_info=True)
+    return risk_score
 
 def fetch_btc_history_kraken(pair: str = 'XBTUSD', interval_minutes: int = 1440):
     url = "https://api.kraken.com/0/public/OHLC"
@@ -80,13 +108,3 @@ def calculate_btc_risk_factor(prices: pd.Series) -> Decimal:
     risk = min(10, base + dd_adjust)
 
     return Decimal(str(round(risk, 2)))
-
-def main():
-    df = fetch_btc_history_kraken()
-    if df is not None:
-        close_prices = df['close']
-        btc_risk = calculate_btc_risk_factor(close_prices)
-        print(btc_risk)
-
-if __name__ == "__main__":
-    main()
