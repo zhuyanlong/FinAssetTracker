@@ -1,8 +1,8 @@
 from sqlmodel import SQLModel, Field
-from typing import Optional
 from decimal import Decimal
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict
+from pydantic import BaseModel
 
 class AssetDataModelConfig(SQLModel):
     pass
@@ -48,3 +48,10 @@ class AssetResults(SQLModel):
 
     report_path: Optional[str] = None
     message: Optional[str] = None
+
+class AgentOutput(BaseModel):
+    verdict: str
+    summary: str
+    suggested_adjustments: Dict[str, float]
+    explanations: Dict[str, str]
+    confidence: float
