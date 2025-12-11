@@ -12,6 +12,7 @@ import os
 from models import AssetSnapshot, AssetResults
 from database import get_db, create_db_and_tables
 from risk_engine import update_and_cache_btc_risk
+from agent import analyze_snapshot_and_results, snapshot_to_dict
 from config import (
     RISK_WEIGHTS,
     GRAMS_TO_OUNCES_TROY,
@@ -225,12 +226,27 @@ async def update_assets(
             weighted_risk_score=weighted_risk_score,
             speculative_ratio=speculative_ratio
         )
+        snapshot_dict = snapshot_to_dict(data)
+        results_dict = {
+            "total_assets_usd": float(results.total_assets_usd),
+            "total_savings_usd": float(results.total_savings_usd),
+            "available_liquidity_ratio": float(results.available_liquidity_ratio),
+            "gold_ratio": float(results.gold_ratio),
+            "btc_ratio": float(results.btc_ratio),
+            "weighted_risk_score": float(results.weighted_risk_score),
+            "speculative_ratio": float(results.speculative_ratio),
+            "btc_dynamic_risk": float(btc_risk_score)
+        }
+
+        context = {"note": "automated analysis", "date": datetime.utcnow().isoformat()}
+        agent_out = analyze_snapshot_and_results(snapshot_dict, results_dict, context=context)
 
         report_content = generate_report(data, results)
         filepath = save_report(report_content)
 
         filename_only = os.path.basename(filepath)
         results.report_path = filename_only
+        results.message = agent_out.summary
 
         db.add(data)
         db.commit()

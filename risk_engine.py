@@ -26,7 +26,7 @@ def update_and_cache_btc_risk() -> Decimal:
         close_prices = df['close']
         risk_score = calculate_btc_risk_factor(close_prices)
     try:
-        RISK_REDIS_CLIENT.set(BTC_RISK_KEY, str(risk_score), ext=43200)
+        RISK_REDIS_CLIENT.set(BTC_RISK_KEY, str(risk_score), ex=43200)
     except Exception as e:
         logging.error(f"Error saving to Redis: {str(e)}", exc_info=True)
     return risk_score
