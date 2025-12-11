@@ -1,4 +1,3 @@
-import os
 import json
 import hashlib
 import logging
@@ -15,12 +14,11 @@ from config import (
     REDIS_HOST,
     REDIS_PORT, 
     REDIS_DB,
+    OPENAI_API_KEY,
+    AGENT_CACHE_TTL
 )
 
 redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
-
-OPENAI_API_KEY = os.getenv("OPENAI_KEY")
-AGENT_CACHE_TTL = int(os.getenv("AGENT_CACHE_TTL", "3600"))
 
 llm = ChatOpenAI(
     model_name="gpt-4o-mini", 
