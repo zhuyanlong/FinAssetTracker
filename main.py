@@ -9,13 +9,12 @@ import uvicorn
 from datetime import datetime
 import os
 
-from models import AssetSnapshot, AssetResults
+from models import AssetSnapshot, AssetResults, SimulationRequest, SimulationResponse
 from database import get_db, create_db_and_tables
 from risk_engine import update_and_cache_btc_risk
 from agent import analyze_snapshot_and_results, snapshot_to_dict
+from calculator import calculate_asset_metrics
 from config import (
-    RISK_WEIGHTS,
-    GRAMS_TO_OUNCES_TROY,
     CACHE_KEY,
     REPORT_DIR,
     REDIS_HOST,
@@ -78,18 +77,6 @@ def get_exchange_rate(code: str):
         print(f"Error getting exchange rate for {code}: {str(e)}")
         return Decimal('0')
 
-def get_usd_value(money: Decimal, rate: Decimal):
-    return (Decimal('1') / rate) * money if rate != Decimal('0') else Decimal('0')
-
-def get_gold_value(grams: Decimal, oz: Decimal, rate: Decimal):
-    ounces = grams * GRAMS_TO_OUNCES_TROY + oz
-    return ounces * (Decimal('1') / rate) if rate != Decimal('0') else Decimal('0')
-
-def get_value(field) -> Decimal: 
-    if field is None or str(field) == "":
-        return Decimal('0')
-    return Decimal(str(field))
-
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
@@ -126,106 +113,8 @@ async def update_assets(
             'BTC': get_exchange_rate('BTC'),
             'SGD': get_exchange_rate('SGD')
         }
-
-        cny_total = get_value(data.retirement_funds_cny) + get_value(data.funds_cny) + get_value(data.savings_cny) + get_value(data.housing_fund_cny)
-        eur_total = get_value(data.savings_eur) + get_value(data.funds_eur)
-        sgd_total = get_value(data.savings_sgd) + get_value(data.funds_sgd)
-        hkd_total = get_value(data.savings_hkd) + get_value(data.funds_hkd)
-
-        values_in_usd = {
-            'gold': get_gold_value(get_value(data.gold_g), get_value(data.gold_oz), rates['XAU']),
-            'cny': get_usd_value(cny_total, rates['CNY']),
-            'gbp': get_usd_value(get_value(data.deposit_gbp), rates['GBP']),
-            'eur': get_usd_value(eur_total, rates['EUR']),
-            'sgd': get_usd_value(sgd_total, rates['SGD']),
-            'hkd': get_usd_value(hkd_total, rates['HKD']),
-            
-            'btc': get_usd_value(get_value(data.btc), rates['BTC']) + get_value(data.btc_stock_usd),
-            
-            'usd': get_value(data.savings_usd) + get_value(data.stock_usd)
-        }
-
-        savings_in_usd = {
-            'cny': get_usd_value(get_value(data.savings_cny), rates['CNY']),
-            'eur': get_usd_value(get_value(data.savings_eur), rates['EUR']),
-            'sgd': get_usd_value(get_value(data.savings_sgd), rates['SGD']),
-            'hkd': get_usd_value(get_value(data.savings_hkd), rates['HKD']),
-            'usd': get_value(data.savings_usd)
-        }
-
-        total_assets_usd = sum(values_in_usd.values())
-        total_savings_usd = sum(savings_in_usd.values())
-
-        if total_assets_usd == Decimal('0'):
-            available_liquidity_ratio = Decimal('0')
-            gold_ratio = Decimal('0')
-            btc_ratio = Decimal('0')
-        else:
-            available_liquidity_ratio = total_savings_usd / total_assets_usd * 100
-            gold_ratio = values_in_usd['gold'] / total_assets_usd * 100 
-            total_btc_usd = values_in_usd['btc']
-            btc_ratio = total_btc_usd / total_assets_usd * 100
-
-        risk_weighted_sum = Decimal('0')
-        # 1. 现金类(储蓄 + 存款)
-        cash_val = (
-            get_usd_value(get_value(data.savings_cny), rates['CNY']) +
-            get_usd_value(get_value(data.savings_eur), rates['EUR']) +
-            get_usd_value(get_value(data.savings_sgd), rates['SGD']) +
-            get_usd_value(get_value(data.savings_hkd), rates['HKD']) +
-            get_usd_value(get_value(data.deposit_gbp), rates['GBP']) +
-            get_value(data.savings_usd)
-        )
-
-        risk_weighted_sum += cash_val * RISK_WEIGHTS['savings']
-        # 2. 政策性资产(公积金 + 养老金)
-        policy_val = get_usd_value(get_value(data.housing_fund_cny) + get_value(data.retirement_funds_cny), rates['CNY'])
-        risk_weighted_sum += policy_val * RISK_WEIGHTS['housing']
-
-        # 3. 基金类(混合型基金)
-        funds_val = (
-            get_usd_value(get_value(data.funds_cny), rates['CNY']) +
-            get_usd_value(get_value(data.funds_eur), rates['EUR']) +
-            get_usd_value(get_value(data.funds_hkd), rates['HKD']) +
-            get_usd_value(get_value(data.funds_sgd), rates['SGD'])
-        )
-        risk_weighted_sum += funds_val * RISK_WEIGHTS['funds_mixed']
-
-        # 4. 黄金
-        risk_weighted_sum += values_in_usd['gold'] * RISK_WEIGHTS['gold']
-
-        # 5. 股票
-        risk_weighted_sum += get_value(data.stock_usd) * RISK_WEIGHTS['stock']
-
-        # 6. 比特币(直接持有 + 相关股票持有)
-        btc_val = values_in_usd['btc']
         btc_risk_score = get_btc_risk_score(redis_client)
-        risk_weighted_sum += btc_val * btc_risk_score
-
-        # 计算最终加权分数
-        weighted_risk_score = Decimal('0')
-        if total_assets_usd > 0:
-            weighted_risk_score = risk_weighted_sum / total_assets_usd
-
-        # 计算投机比例
-        speculative_assets = Decimal('0')
-        speculative_assets += values_in_usd['gold'] * RISK_WEIGHTS['gold'] / Decimal('10')
-        speculative_assets += get_value(data.stock_usd) * RISK_WEIGHTS['stock'] / Decimal('10')
-        speculative_assets += btc_val * RISK_WEIGHTS['btc'] / Decimal('10')
-        values_in_usd['gold'] + get_value(data.stock_usd) + btc_val
-        if total_assets_usd > 0:
-            speculative_ratio = (speculative_assets / total_assets_usd) * 100
-
-        results = AssetResults(
-            total_assets_usd=total_assets_usd,
-            total_savings_usd=total_savings_usd,
-            available_liquidity_ratio=available_liquidity_ratio,
-            gold_ratio=gold_ratio,
-            btc_ratio=btc_ratio,
-
-            weighted_risk_score=weighted_risk_score,
-            speculative_ratio=speculative_ratio
-        )
+        results = calculate_asset_metrics(data, rates, btc_risk_score)
         snapshot_dict = snapshot_to_dict(data)
         results_dict = {
             "total_assets_usd": float(results.total_assets_usd),
@@ -280,6 +169,56 @@ def download_report(filename: str):
         path=filepath,
         media_type='text/plain',
         filename=filename
+    )
+
+@app.post("simulate", response_model=SimulationResponse)
+async def simulate_investment(
+    request: SimulationRequest,
+    db: Session = Depends(get_db)
+):
+    current_snapshot = load_from_redis()
+    if not current_snapshot:
+        statement = select(AssetSnapshot).order_by(desc(AssetSnapshot.id)).limit(1)
+        current_snapshot = db.exec(statement).first()
+        if not current_snapshot:
+            raise HTTPException(status_code=404, detail="No baseline data found.")
+        
+    rates = {
+        'XAU': get_exchange_rate('XAU'),
+        'CNY': get_exchange_rate('CNY'),
+        'GBP': get_exchange_rate('GBP'),
+        'EUR': get_exchange_rate('EUR'),
+        'HKD': get_exchange_rate('HKD'),
+        'BTC': get_exchange_rate('BTC'),
+        'SGD': get_exchange_rate('SGD')
+    }
+    btc_risk = get_btc_risk_score(redis_client)
+    original_results = calculate_asset_metrics(current_snapshot, rates, btc_risk)
+
+    simulated_snapshot = original_results.model_copy(deep=True)
+
+    if hasattr(simulated_snapshot, request.target_field):
+        original_value = getattr(simulated_snapshot, request.target_field) or Decimal('0')
+        new_value = original_value + request.delta_amount
+        if new_value < 0: new_value = Decimal('0')
+
+        setattr(simulated_snapshot, request.target_field, new_value)
+    else:
+        raise HTTPException(status_code=404, detail=f"Invalid field: {request.target_field}")
+    
+    simulated_results = calculate_asset_metrics(simulated_snapshot, rates, btc_risk)
+
+    diff_summary = {
+        "total_assets": f"{original_results.total_assets_usd:.2f} -> {simulated_results.total_assets_usd:.2f}",
+        "risk_score": f"{original_results.weighted_risk_score:.2f} -> {simulated_results.weighted_risk_score:.2f}",
+        "btc_ratio": f"{original_results.btc_ratio:.2f}% -> {simulated_results.btc_ratio:.2f}%",
+        "liquidity": f"{original_results.available_liquidity_ratio:.2f}% -> {simulated_results.available_liquidity_ratio:.2f}%"
+    }
+
+    return SimulationResponse(
+        original=original_results,
+        simulated=simulated_results,
+        diff_summary=diff_summary
     )
 
 def generate_report(data: AssetSnapshot, results: AssetResults) -> str:

@@ -55,3 +55,12 @@ class AgentOutput(BaseModel):
     suggested_adjustments: Dict[str, float]
     explanations: Dict[str, str]
     confidence: float
+
+class SimulationRequest(BaseModel):
+    target_field: str
+    delta_amount: Decimal
+
+class SimulationResponse(BaseModel):
+    original: AssetResults
+    simulated: AssetResults
+    diff_summary: Dict[str, str]
