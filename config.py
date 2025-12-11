@@ -42,3 +42,15 @@ RISK_WEIGHTS = {
 
 # Redis Key for BTC Risk Factor
 BTC_RISK_KEY = 'btc_volatility_risk_score'
+
+BTC_PAIR = 'XBTUSD'
+BTC_INTERVAL_MINUTES = 1440
+BTC_HISTORY_DAYS = 720
+
+BTC_RISK_WEIGHTS = {
+    'volatility': Decimal('0.6'),
+    'mod': Decimal('0.4')
+}
+
+VOLATILITY_WINDOW = 30
+MOD_WINDOW = 365
