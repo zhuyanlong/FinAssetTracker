@@ -46,6 +46,8 @@ class AssetResults(SQLModel):
     weighted_risk_score: Decimal
     speculative_ratio: Decimal
 
+    currency_distribution: Dict[str, Decimal] = {}
+
     report_path: Optional[str] = None
     message: Optional[str] = None
 

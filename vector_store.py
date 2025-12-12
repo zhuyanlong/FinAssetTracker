@@ -38,4 +38,3 @@ class AssetVectorDB:
         return self.vector_store.similarity_search(query, k=k)
 
 asset_vector_db = AssetVectorDB()
-

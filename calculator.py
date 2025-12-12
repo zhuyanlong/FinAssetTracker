@@ -92,6 +92,34 @@ def calculate_asset_metrics(data: AssetSnapshot, rates: dict, btc_risk_score: De
     if total_assets_usd > 0:
         speculative_ratio = (speculative_assets / total_assets_usd) * 100
 
+    # 外汇占比计算
+    # 1. 计算各种货币资产的USD价值
+    cny_exposure_usd = get_usd_value(cny_total, rates['CNY'])
+    usd_exposure_usd = get_value(data.savings_usd) + get_value(data.stock_usd) + get_value(data.btc_stock_usd)
+    hkd_exposure_usd = get_usd_value(hkd_total, rates['HKD'])
+    sgd_exposure_usd = get_usd_value(sgd_total, rates['SGD'])
+    eur_exposure_usd = get_usd_value(eur_total, rates['EUR'])
+    gbp_exposure_usd = get_usd_value(get_value(data.deposit_gbp), rates['GBP'])
+
+    gold_exposure_usd = values_in_usd['gold']
+    btc_exposure_usd = get_usd_value(get_value(data.btc), rates['BTC'])
+
+    # 2. 计算货币分布百分比
+    currency_dist = {}
+    if total_assets_usd > 0:
+        currency_dist = {
+            "CNY": (cny_exposure_usd / total_assets_usd) * 100,
+            "USD": (usd_exposure_usd / total_assets_usd) * 100,
+            "HKD": (hkd_exposure_usd / total_assets_usd) * 100,
+            "SGD": (sgd_exposure_usd / total_assets_usd) * 100,
+            "EUR": (eur_exposure_usd / total_assets_usd) * 100,
+            "GBP": (gbp_exposure_usd / total_assets_usd) * 100,
+            "GOLD": (gold_exposure_usd / total_assets_usd) * 100,
+            "BTC": (btc_exposure_usd / total_assets_usd) * 100
+        }
+
+    currency_dist = {k: round(v, 2) for k, v in currency_dist.items() if v > 0.01}
+
     results = AssetResults(
         total_assets_usd=total_assets_usd,
         total_savings_usd=total_savings_usd,
@@ -100,6 +128,7 @@ def calculate_asset_metrics(data: AssetSnapshot, rates: dict, btc_risk_score: De
         btc_ratio=btc_ratio,
 
         weighted_risk_score=weighted_risk_score,
-        speculative_ratio=speculative_ratio
+        speculative_ratio=speculative_ratio,
+        currency_distribution=currency_dist
     )
     return results
