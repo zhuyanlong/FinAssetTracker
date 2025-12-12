@@ -108,8 +108,8 @@ def calculate_btc_risk_factor(prices: pd.Series) -> Decimal:
 
     # 4. 加权计算最终风险
     final_score = (
-        Decimal(str(vol_score) * BTC_RISK_WEIGHTS['volatility']) +
-        Decimal(str(mdd_score) * BTC_RISK_WEIGHTS['mdd'])
+        Decimal(str(vol_score)) * BTC_RISK_WEIGHTS['volatility'] +
+        Decimal(str(mdd_score)) * BTC_RISK_WEIGHTS['mdd']
     )
 
     final_score = max(Decimal('0'), min(Decimal('10'), final_score))

@@ -1,15 +1,16 @@
+import os
 import redis
+import logging
+import uvicorn
+
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from sqlmodel import Session, select, desc
 from decimal import Decimal
-import logging
-import uvicorn
 from datetime import datetime
-import os
-
 from models import AssetSnapshot, AssetResults, SimulationRequest, SimulationResponse
+from vector_store import asset_vector_db
 from database import get_db, create_db_and_tables
 from risk_engine import update_and_cache_btc_risk
 from agent import analyze_snapshot_and_results, snapshot_to_dict
@@ -131,6 +132,21 @@ async def update_assets(
         agent_out = analyze_snapshot_and_results(snapshot_dict, results_dict, context=context)
 
         report_content = generate_report(data, results)
+
+        try:
+            vector_metadata = {
+                "report_date": data.snapshot_date.strftime("%Y-%m-%d"),
+                "total_assets": float(results.total_assets_usd),
+                "risk_score": float(results.weighted_risk_score),
+                "btc_ratio": float(results.btc_ratio),
+                "source": "automated_update"
+            }
+
+            asset_vector_db.add_report(report_text=report_content, metadata=vector_metadata)
+
+        except Exception as e:
+            logging.error(f"Vector DB storage failed: {e}")
+        
         filepath = save_report(report_content)
 
         filename_only = os.path.basename(filepath)

@@ -49,7 +49,7 @@ BTC_HISTORY_DAYS = 720
 
 BTC_RISK_WEIGHTS = {
     'volatility': Decimal('0.6'),
-    'mod': Decimal('0.4')
+    'mdd': Decimal('0.4')
 }
 
 VOLATILITY_WINDOW = 30
