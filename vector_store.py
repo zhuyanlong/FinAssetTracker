@@ -2,18 +2,15 @@ import os
 import logging
 from typing import Dict, Any
 from langchain_chroma import Chroma
-from langchain_openai import OpenAIEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
-
-from config import OPENAI_API_KEY
 
 PERSIST_DIRECTORY = os.path.join(os.path.dirname(__file__), "chroma_db")
 
 class AssetVectorDB:
     def __init__(self):
-        self.embedding_function = OpenAIEmbeddings(
-            model="text-embedding-3-small",
-            api_key=OPENAI_API_KEY
+        self.embedding_function = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
         )
 
         self.vector_store = Chroma(

@@ -187,7 +187,7 @@ def download_report(filename: str):
         filename=filename
     )
 
-@app.post("simulate", response_model=SimulationResponse)
+@app.post("/simulate", response_model=SimulationResponse)
 async def simulate_investment(
     request: SimulationRequest,
     db: Session = Depends(get_db)
