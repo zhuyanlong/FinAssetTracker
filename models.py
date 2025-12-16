@@ -66,3 +66,37 @@ class SimulationResponse(BaseModel):
     original: AssetResults
     simulated: AssetResults
     diff_summary: Dict[str, str]
+
+class FXConversionSuggestion:
+    def __init__(
+        self,
+        from_currency: str,
+        to_currency: str,
+        amount_usd: Decimal,
+        reason: str
+    ):
+        self.from_currency = from_currency
+        self.to_currency = to_currency
+        self.amount_usd = amount_usd
+        self.reason = reason
+
+class SmartSuggestion:
+    def __init__(
+        self,
+        asset_class: str,
+        current_pct: Decimal,
+        target_pct: Decimal,
+        drift: Decimal,
+        fx_status: str,
+        action: str,
+        amount_usd: Decimal,
+        reason: str
+    ):
+        self.asset_class = asset_class
+        self.current_pct = current_pct
+        self.target_pct = target_pct
+        self.drift = drift
+        self.fx_status = fx_status
+        self.action = action
+        self.amount_usd = amount_usd
+        self.reason = reason

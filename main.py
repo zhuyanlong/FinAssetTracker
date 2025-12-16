@@ -15,13 +15,17 @@ from database import get_db, create_db_and_tables
 from risk_engine import update_and_cache_btc_risk
 from agent import analyze_snapshot_and_results, snapshot_to_dict
 from calculator import calculate_asset_metrics
+from allocation_engine import calculate_strategic_rebalancing
 from config import (
     CACHE_KEY,
     REPORT_DIR,
     REDIS_HOST,
     REDIS_DB,
     REDIS_PORT,
-    BTC_RISK_KEY
+    BTC_RISK_KEY,
+    TARGET_ALLOCATION,
+    REBALANCE_THRESHOLD,
+    FX_REFERENCE
 )
 
 app = FastAPI()
@@ -116,6 +120,28 @@ async def update_assets(
         }
         btc_risk_score = get_btc_risk_score(redis_client)
         results = calculate_asset_metrics(data, rates, btc_risk_score)
+
+        strategic_suggestions = calculate_strategic_rebalancing(
+            results=results,
+            target_map=TARGET_ALLOCATION,
+            threshold=REBALANCE_THRESHOLD,
+            current_rates=rates,
+            fx_refs=FX_REFERENCE
+        )
+
+        strategy_msg = []
+
+        if not strategic_suggestions:
+            strategy_msg.append("资产配置与汇率估值均在健康区间")
+        else:
+            for item in strategic_suggestions:
+                icon = "🚨" if "STRONG" in item.action else "💡"
+                strategy_msg.append(
+                    f"{icon} {item.asset_class}: {item.action} | 偏差:{item.drift:+.1f}% | 汇率:{item.fx_status} | {item.reason}"
+                )
+
+        formatted_strategy_text = "\n".join(strategy_msg)
+
         snapshot_dict = snapshot_to_dict(data)
         results_dict = {
             "total_assets_usd": float(results.total_assets_usd),
@@ -125,10 +151,16 @@ async def update_assets(
             "btc_ratio": float(results.btc_ratio),
             "weighted_risk_score": float(results.weighted_risk_score),
             "speculative_ratio": float(results.speculative_ratio),
-            "btc_dynamic_risk": float(btc_risk_score)
+            "btc_dynamic_risk": float(btc_risk_score),
+            "currency_distribution": results.currency_distribution,
+            "strategic_advice": formatted_strategy_text
         }
 
-        context = {"note": "automated analysis", "date": datetime.utcnow().isoformat()}
+        context = {
+            "note": "automated analysis", 
+            "date": datetime.utcnow().isoformat(),
+            "fx_market_status": "Analyst provided strategic rebalancing advice based on FX valuation."
+        }
         agent_out = analyze_snapshot_and_results(snapshot_dict, results_dict, context=context)
 
         report_content = generate_report(data, results)
@@ -151,7 +183,7 @@ async def update_assets(
 
         filename_only = os.path.basename(filepath)
         results.report_path = filename_only
-        results.message = agent_out.summary
+        results.message = f"{agent_out.summary}\n\n【量化策略建议】:\n{formatted_strategy_text}"
 
         db.add(data)
         db.commit()

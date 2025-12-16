@@ -57,3 +57,25 @@ MOD_WINDOW = 365
 
 OPENAI_API_KEY = os.getenv("OPENAI_KEY")
 AGENT_CACHE_TTL = int(os.getenv("AGENT_CACHE_TTL", "3600"))
+
+# 各种货币的比例
+TARGET_ALLOCATION = {
+    "CNY": Decimal('40.0'),
+    "USD": Decimal('30.0'),
+    "GOLD": Decimal('15.0'),
+    "BTC": Decimal('10.0'),
+
+    "SGD": Decimal('3.0'),
+    "EUR": Decimal('1.0'),
+    "GBP": Decimal('1.0'),
+    "OTHER": Decimal('0.0')
+}
+
+REBALANCE_THRESHOLD = Decimal('5.0')
+
+FX_REFERENCE = {
+    "CNY": Decimal("7.10"),
+    "EUR": Decimal("0.92"),
+    "GBP": Decimal("0.78"),
+    "SGD": Decimal("1.34")
+}
