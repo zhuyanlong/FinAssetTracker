@@ -51,6 +51,8 @@ class AssetResults(SQLModel):
     report_path: Optional[str] = None
     message: Optional[str] = None
 
+    projected_monthly_income_usd: Decimal = Field(default=0, max_digits=20, decimal_places=2)
+
 class AgentOutput(BaseModel):
     verdict: str
     summary: str
@@ -66,19 +68,6 @@ class SimulationResponse(BaseModel):
     original: AssetResults
     simulated: AssetResults
     diff_summary: Dict[str, str]
-
-class FXConversionSuggestion:
-    def __init__(
-        self,
-        from_currency: str,
-        to_currency: str,
-        amount_usd: Decimal,
-        reason: str
-    ):
-        self.from_currency = from_currency
-        self.to_currency = to_currency
-        self.amount_usd = amount_usd
-        self.reason = reason
 
 class SmartSuggestion:
     def __init__(

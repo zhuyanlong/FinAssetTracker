@@ -153,7 +153,8 @@ async def update_assets(
             "speculative_ratio": float(results.speculative_ratio),
             "btc_dynamic_risk": float(btc_risk_score),
             "currency_distribution": results.currency_distribution,
-            "strategic_advice": formatted_strategy_text
+            "strategic_advice": formatted_strategy_text,
+            "monthly_passive_income": float(results.projected_monthly_income_usd),
         }
 
         context = {
@@ -298,6 +299,7 @@ Original Asset Data:
 总资产: {results.total_assets_usd:.2f} USD
 总储蓄: {results.total_savings_usd:.2f} USD
 黄金资产占比: {results.gold_ratio:.2f}%
+预估月被动收入: {results.projected_monthly_income_usd:.2f} USD
 比特币资产占比: {results.btc_ratio:.2f}%
 """
     return report

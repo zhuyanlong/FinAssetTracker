@@ -78,3 +78,30 @@ FX_REFERENCE = {
     "GBP": Decimal("0.75"), # 英镑相对美元的参考汇率
     "SGD": Decimal("1.29") # 新元相对美元的参考汇率
 }
+
+ASSET_APY = {
+    # 人民币资产
+    'savings_cny': 0.015,
+    'funds_cny': 0.03,
+    'housing_fund_cny': 0.015,
+    'retirement_funds_cny': 0.03,
+
+    # 美元资产
+    'savings_usd': 0.04,
+    'stock_usd': 0.015, # 美股股息率
+    'btc_stock_usd': 0.0,
+
+    # 港币资产
+    'savings_hkd': 0.03,
+    'funds_hdk': 0.04,
+
+    # 新元资产
+    'savings_eur': 0.03,
+    'funds_sgd': 0.04,
+
+    # 欧元/英镑
+    'savings_eur': 0.03,
+    'funds_eur': 0.04,
+    'savings_eur': 0.02,
+    'deposit_gbp': 0.04
+}

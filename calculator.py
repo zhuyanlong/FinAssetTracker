@@ -1,6 +1,6 @@
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from models import AssetSnapshot, AssetResults
-from config import RISK_WEIGHTS
+from config import RISK_WEIGHTS, ASSET_APY 
 from utils import get_usd_value, get_gold_value, get_value
 
 def calculate_asset_metrics(data: AssetSnapshot, rates: dict, btc_risk_score: Decimal) -> AssetResults:
@@ -120,6 +120,9 @@ def calculate_asset_metrics(data: AssetSnapshot, rates: dict, btc_risk_score: De
 
     currency_dist = {k: round(v, 2) for k, v in currency_dist.items() if v > 0.01}
 
+    monthly_income = calculate_projected_monthly_income(data, rates)
+    monthly_income_rounded = monthly_income.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
     results = AssetResults(
         total_assets_usd=total_assets_usd,
         total_savings_usd=total_savings_usd,
@@ -129,6 +132,45 @@ def calculate_asset_metrics(data: AssetSnapshot, rates: dict, btc_risk_score: De
 
         weighted_risk_score=weighted_risk_score,
         speculative_ratio=speculative_ratio,
-        currency_distribution=currency_dist
-    )
+        projected_monthly_income_usd=monthly_income_rounded,
+     )
     return results
+
+def calculate_projected_monthly_income(snapshot: AssetSnapshot, rates: dict) -> Decimal:
+    """
+    计算预估的月度被动收入
+    """
+    total_monthly_income_usd = Decimal('0')
+
+    asset_dict = snapshot.model_dump()
+
+    for field, amount in asset_dict.items():
+        if not isinstance(amount, (int, float, Decimal)) or amount == 0:
+            continue
+
+        amount_decimal = Decimal(str(amount))
+
+        apy = Decimal(str(ASSET_APY.get(field, 0)))
+
+        if apy == 0:
+            continue
+
+        exchange_rate = Decimal('1')
+        if field.endswith('_cny'):
+            exchange_rate = rates.get('CNY', Decimal('0'))
+        elif field.endswith('_hkd'):
+            exchange_rate = rates.get('HKD', Decimal('0'))
+        elif field.endswith('_sgd'):
+            exchange_rate = rates.get('SGD', Decimal('0'))
+        elif field.endswith('_eur'):
+            exchange_rate = rates.get('EUR', Decimal('0'))
+        elif field.endswith('_gbp'):
+            exchange_rate = rates.get('GBP', Decimal('0'))
+
+        usd_value = amount_decimal * exchange_rate
+        monthly_income = (usd_value * apy) / Decimal('12')
+
+        total_monthly_income_usd += monthly_income
+
+    return total_monthly_income_usd
+
