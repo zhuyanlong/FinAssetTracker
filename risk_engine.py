@@ -28,7 +28,9 @@ def update_and_cache_btc_risk() -> Decimal:
         logging.warning("数据不足, 使用默认配置的静态权重")
         risk_score = RISK_WEIGHTS['btc']
     else:
-        close_prices = df['close']
+        df_1y = df.tail(365).copy()
+
+        close_prices = df_1y['close']
         risk_score = calculate_btc_risk_factor(close_prices)
     
     try:

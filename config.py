@@ -45,7 +45,6 @@ BTC_RISK_KEY = 'btc_volatility_risk_score'
 
 BTC_PAIR = 'XBTUSD'
 BTC_INTERVAL_MINUTES = 1440
-BTC_HISTORY_DAYS = 720
 
 BTC_RISK_WEIGHTS = {
     'volatility': Decimal('0.6'),
@@ -60,13 +59,13 @@ AGENT_CACHE_TTL = int(os.getenv("AGENT_CACHE_TTL", "3600"))
 
 # 各种货币的比例
 TARGET_ALLOCATION = {
-    "CNY": Decimal('40.0'),
-    "USD": Decimal('30.0'),
-    "GOLD": Decimal('15.0'),
-    "BTC": Decimal('10.0'),
+    "CNY": Decimal('30.0'),
+    "USD": Decimal('10.0'),
+    "GOLD": Decimal('30.0'),
+    "BTC": Decimal('20.0'),
 
-    "SGD": Decimal('3.0'),
-    "EUR": Decimal('1.0'),
+    "SGD": Decimal('4.0'),
+    "EUR": Decimal('5.0'),
     "GBP": Decimal('1.0'),
     "OTHER": Decimal('0.0')
 }
@@ -74,8 +73,8 @@ TARGET_ALLOCATION = {
 REBALANCE_THRESHOLD = Decimal('5.0')
 
 FX_REFERENCE = {
-    "CNY": Decimal("7.10"),
-    "EUR": Decimal("0.92"),
-    "GBP": Decimal("0.78"),
-    "SGD": Decimal("1.34")
+    "CNY": Decimal("7.05"), # 人民币相对美元的参考汇率为 7.10
+    "EUR": Decimal("0.85"), # 欧元相对美元的参考汇率
+    "GBP": Decimal("0.75"), # 英镑相对美元的参考汇率
+    "SGD": Decimal("1.29") # 新元相对美元的参考汇率
 }

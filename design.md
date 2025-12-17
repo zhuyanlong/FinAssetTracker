@@ -10,3 +10,6 @@ psql -U postgres -d mydb
 重启fastapi服务：
 sudo systemctl restart fastapi.service
 sudo systemctl status fastapi.service
+
+查看实时日志:
+sudo journalctl -u fastapi.service -f

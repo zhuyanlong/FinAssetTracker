@@ -79,7 +79,7 @@ def get_exchange_rate(code: str):
         rate = redis_client.get(code)
         return Decimal(rate.decode('utf-8')) if rate else Decimal('0')
     except Exception as e:
-        print(f"Error getting exchange rate for {code}: {str(e)}")
+        logging.error(f"Error getting exchange rate for {code}: {str(e)}")
         return Decimal('0')
 
 @app.on_event("startup")
