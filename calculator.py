@@ -132,6 +132,7 @@ def calculate_asset_metrics(data: AssetSnapshot, rates: dict, btc_risk_score: De
 
         weighted_risk_score=weighted_risk_score,
         speculative_ratio=speculative_ratio,
+        currency_distribution=currency_dist,
         projected_monthly_income_usd=monthly_income_rounded,
      )
     return results
