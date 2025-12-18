@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from sqlmodel import Session, select, desc
 from decimal import Decimal
 from datetime import datetime
-from models import AssetSnapshot, AssetResults, SimulationRequest, SimulationResponse
+from models import AssetSnapshot, AssetResults, AdvancedSimulationRequest, SimulationResponse
 from vector_store import asset_vector_db
 from database import get_db, create_db_and_tables
 from risk_engine import update_and_cache_btc_risk
@@ -155,7 +155,7 @@ async def update_assets(
             "currency_distribution": results.currency_distribution,
             "strategic_advice": formatted_strategy_text,
         }
-        
+
         context = {
             "note": "automated analysis", 
             "date": datetime.utcnow().isoformat(),
@@ -221,9 +221,10 @@ def download_report(filename: str):
 
 @app.post("/simulate", response_model=SimulationResponse)
 async def simulate_investment(
-    request: SimulationRequest,
+    request: AdvancedSimulationRequest,
     db: Session = Depends(get_db)
 ):
+    # 1. 获取基准数据
     current_snapshot = load_from_redis()
     if not current_snapshot:
         statement = select(AssetSnapshot).order_by(desc(AssetSnapshot.id)).limit(1)
@@ -231,6 +232,7 @@ async def simulate_investment(
         if not current_snapshot:
             raise HTTPException(status_code=404, detail="No baseline data found.")
         
+    # 2. 获取实时环境数据
     rates = {
         'XAU': get_exchange_rate('XAU'),
         'CNY': get_exchange_rate('CNY'),
@@ -243,24 +245,40 @@ async def simulate_investment(
     btc_risk = get_btc_risk_score(redis_client)
     original_results = calculate_asset_metrics(current_snapshot, rates, btc_risk)
 
-    simulated_snapshot = original_results.model_copy(deep=True)
+    # 3. 拷贝
+    simulated_snapshot = current_snapshot.model_copy(deep=True)
 
-    if hasattr(simulated_snapshot, request.target_field):
-        original_value = getattr(simulated_snapshot, request.target_field) or Decimal('0')
-        new_value = original_value + request.delta_amount
-        if new_value < 0: new_value = Decimal('0')
-
-        setattr(simulated_snapshot, request.target_field, new_value)
-    else:
-        raise HTTPException(status_code=404, detail=f"Invalid field: {request.target_field}")
+    for action in request.actions:
+        if hasattr(simulated_snapshot, action.field):
+            old_val = getattr(simulated_snapshot, action.field) or Decimal('0')
+            logging.warning(f"delta: {action.delta}")
+            setattr(simulated_snapshot, action.field, old_val + action.delta)
+        else:
+            logging.warning(f"Simulation tried to modify non-existent field: {action.field}")
     
+    # 4. 重新计算模拟后的指标
     simulated_results = calculate_asset_metrics(simulated_snapshot, rates, btc_risk)
+
+    # 5. 调用Agent获取模拟决策的意见
+    sim_snapshot_dict = snapshot_to_dict(simulated_snapshot)
+    sim_results_dict = {
+        "total_assets_usd": float(simulated_results.total_assets_usd),
+        "weighted_risk_score": float(simulated_results.weighted_risk_score),
+        "btc_ratio": float(simulated_results.btc_ratio),
+        "available_liquidity_ratio": float(simulated_results.available_liquidity_ratio)
+    }
+
+    sim_context = {"note": f"SIMULATION ONLY: {request.notes}"}
+
+    agent_feedback = analyze_snapshot_and_results(sim_snapshot_dict, sim_results_dict, context=sim_context)
 
     diff_summary = {
         "total_assets": f"{original_results.total_assets_usd:.2f} -> {simulated_results.total_assets_usd:.2f}",
         "risk_score": f"{original_results.weighted_risk_score:.2f} -> {simulated_results.weighted_risk_score:.2f}",
-        "btc_ratio": f"{original_results.btc_ratio:.2f}% -> {simulated_results.btc_ratio:.2f}%",
-        "liquidity": f"{original_results.available_liquidity_ratio:.2f}% -> {simulated_results.available_liquidity_ratio:.2f}%"
+        # "btc_ratio": f"{original_results.btc_ratio:.2f}% -> {simulated_results.btc_ratio:.2f}%",
+        "liquidity": f"{original_results.available_liquidity_ratio:.2f}% -> {simulated_results.available_liquidity_ratio:.2f}%",
+        "agent_verdict": agent_feedback.verdict,
+        "agent_advice": agent_feedback.summary,
     }
 
     return SimulationResponse(

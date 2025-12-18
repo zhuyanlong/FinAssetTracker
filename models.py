@@ -1,7 +1,7 @@
 from sqlmodel import SQLModel, Field
 from decimal import Decimal
 from datetime import datetime
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 from pydantic import BaseModel
 
 class AssetDataModelConfig(SQLModel):
@@ -68,6 +68,14 @@ class SimulationResponse(BaseModel):
     original: AssetResults
     simulated: AssetResults
     diff_summary: Dict[str, str]
+
+class SimulationAction(BaseModel):
+    field: str       # 想要修改的字段 eg:savings_cny
+    delta: Decimal   # 变化量 负数代表减少 正数代表增加
+
+class AdvancedSimulationRequest(BaseModel):
+    actions: List[SimulationAction]
+    notes: Optional[str] = "Decision Simulation"
 
 class SmartSuggestion:
     def __init__(
