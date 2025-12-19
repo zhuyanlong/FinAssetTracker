@@ -32,8 +32,8 @@ app = FastAPI()
 redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
 
 origins = [
-    "https://finassettrackerfrontend.netlify.app",
-]
+    "https://asset.yanlongzhu.space",
+] 
 
 app.add_middleware(
     CORSMiddleware,
