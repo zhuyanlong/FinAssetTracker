@@ -3,6 +3,7 @@ from decimal import Decimal
 from datetime import datetime
 from typing import Optional, Dict, List
 from pydantic import BaseModel
+from enum import Enum
 
 class AssetDataModelConfig(SQLModel):
     pass
@@ -97,3 +98,17 @@ class SmartSuggestion:
         self.action = action
         self.amount_usd = amount_usd
         self.reason = reason
+
+class ActionType(str, Enum):
+    ADJUST = "ADJUST"   # 收入/消费(单边变动)
+    TRANSFER = "TRANSFER" # 换汇/买卖(双边变动)
+
+class SimulationAction(SQLModel):
+    type: ActionType = ActionType.ADJUST     # 默认为直接调整
+    from_field: str                          # 资金来源
+    to_field: Optional[str] = None           # 资金去向
+    amount: Decimal                          # 变动数量
+
+class AdvancedSimulationRequest(SQLModel):
+    actions: List[SimulationAction]
+    notes: Optional[str] = "Asset rebalancing silulation"

@@ -27,6 +27,7 @@ from config import (
     REBALANCE_THRESHOLD,
     FX_REFERENCE
 )
+from onchain_analyzer import generate_btc_onchain_report
 
 app = FastAPI()
 redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
@@ -121,6 +122,19 @@ async def update_assets(
         btc_risk_score = get_btc_risk_score(redis_client)
         results = calculate_asset_metrics(data, rates, btc_risk_score)
 
+        market_report_text = generate_btc_onchain_report()
+        logging.info(f"Market Report Generatedd: {market_report_text.strip()}")
+
+        try:
+            vector_metadata = {
+                "report_date": data.snapshot_date.strftime("%Y-%m-%d"),
+                "source": "market_sentiment",
+                "type": "btc_fng"
+            }
+            asset_vector_db.add_report(report_text=market_report_text, metadata=vector_metadata)
+        except Exception as e:
+            logging.error(f"Vector DB storage failed: {e}")
+
         strategic_suggestions = calculate_strategic_rebalancing(
             results=results,
             target_map=TARGET_ALLOCATION,
@@ -159,6 +173,8 @@ async def update_assets(
         context = {
             "note": "automated analysis", 
             "date": datetime.utcnow().isoformat(),
+            "market_sentiment_analysis": market_report_text,
+            "user_intent": "User is actively DCAing into BTC.",
             "fx_market_status": "Analyst provided strategic rebalancing advice based on FX valuation."
         }
         agent_out = analyze_snapshot_and_results(snapshot_dict, results_dict, context=context)
