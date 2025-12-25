@@ -9,7 +9,13 @@ from fastapi.responses import FileResponse
 from sqlmodel import Session, select, desc
 from decimal import Decimal
 from datetime import datetime
-from models import AssetSnapshot, AssetResults, AdvancedSimulationRequest, SimulationResponse
+from models import (
+    AssetSnapshot, 
+    AssetResults, 
+    AdvancedSimulationRequest, 
+    SimulationResponse,
+    ActionType
+)
 from vector_store import asset_vector_db
 from database import get_db, create_db_and_tables
 from risk_engine import update_and_cache_btc_risk
@@ -43,6 +49,24 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+def get_currency_code_from_field(field_name: str) -> str:
+    """根据字段名推断货币代码"""
+    field = field_name.lower()
+    if 'cny' in field: return 'CNY'
+    if 'hdk' in field: return 'HKD'
+    if 'sgd' in field: return 'SGD'
+    if 'eur' in field: return "EUR"
+    if 'gbp' in field: return 'GBP'
+    if 'btc' in field: return 'BTC'
+    if 'gold' in field: return 'XAU'
+    if 'usd' in field: return 'USD'
+    return 'USD'
+
+def get_unit_multiplier(field_name: str) -> Decimal:
+    if 'gold_g' in field_name:
+        return Decimal('1') / Decimal('31.1035')
+    return Decimal('1')
 
 def get_btc_risk_score(redis_client) -> Decimal:
     """从Redis获取风险分, 如果失败, 则计算并存入Redis"""
@@ -264,14 +288,58 @@ async def simulate_investment(
     # 3. 拷贝
     simulated_snapshot = current_snapshot.model_copy(deep=True)
 
+    simulation_logs = [] # 用于记录转换过程
+
     for action in request.actions:
-        if hasattr(simulated_snapshot, action.field):
-            old_val = getattr(simulated_snapshot, action.field) or Decimal('0')
-            logging.warning(f"delta: {action.delta}")
-            setattr(simulated_snapshot, action.field, old_val + action.delta)
-        else:
-            logging.warning(f"Simulation tried to modify non-existent field: {action.field}")
-    
+        if action.type == ActionType.ADJUST:
+            if hasattr(simulated_snapshot, action.from_field):
+                old_val = getattr(simulated_snapshot, action.from_field) or Decimal('0')
+                logging.info(f"old_val: {old_val}, amount: {action.amount}")
+                new_val = Decimal(old_val) + action.amount
+                if new_val < 0: new_val = Decimal('0')
+                setattr(simulated_snapshot, action.from_field, new_val)
+                simulation_logs.append(f"Adjusted {action.from_field} by {action.amount}")
+            else:
+                logging.warning(f"Field: {action.from_field} not found")
+        elif action.type == ActionType.TRANSFER:
+            if not action.to_field:
+                continue
+
+            if hasattr(simulated_snapshot, action.from_field):
+                src_val = getattr(simulated_snapshot, action.from_field) or Decimal('0')
+                transfer_amount = abs(action.amount)
+
+                setattr(simulated_snapshot, action.from_field, src_val - transfer_amount)
+
+                # 1. 识别货币代码
+                src_code = get_currency_code_from_field(action.from_field)
+                target_code = get_currency_code_from_field(action.to_field)
+
+                # 2. 获取对美元汇率
+                src_rate = rates.get(src_code, Decimal('0'))
+                target_rate = rates.get(target_code, Decimal('0'))
+
+                # 3. 处理黄金
+                src_unit_factor = get_unit_multiplier(action.from_field)
+                target_unit_factor = get_unit_multiplier(action.to_field)
+
+                if target_rate > 0:
+                    value_in_usd = transfer_amount * src_unit_factor * src_rate
+
+                    target_amount_delta = value_in_usd / (target_rate * target_unit_factor)
+
+                    if hasattr(simulated_snapshot, action.to_field):
+                        target_old_val = getattr(simulated_snapshot, action.to_field) or Decimal('0')
+                        setattr(simulated_snapshot, action.to_field, target_old_val + target_amount_delta)
+
+                        simulation_logs.append(
+                            f"Transferred {transfer_amount} {src_code} -> {target_amount_delta:.4f} {target_code} "
+                            f"(Rate: {src_rate}/{target_rate})"
+                        )
+                else:
+                    logging.error(f"Invalid target rate for {target_code}")
+
+            
     # 4. 重新计算模拟后的指标
     simulated_results = calculate_asset_metrics(simulated_snapshot, rates, btc_risk)
 
@@ -284,7 +352,10 @@ async def simulate_investment(
         "available_liquidity_ratio": float(simulated_results.available_liquidity_ratio)
     }
 
-    sim_context = {"note": f"SIMULATION ONLY: {request.notes}"}
+    sim_context = {
+        "note": f"SIMULATION ONLY: {request.notes}",
+        "actions_log": "; ".join(simulation_logs)
+    }
 
     agent_feedback = analyze_snapshot_and_results(sim_snapshot_dict, sim_results_dict, context=sim_context)
 
@@ -295,6 +366,7 @@ async def simulate_investment(
         "liquidity": f"{original_results.available_liquidity_ratio:.2f}% -> {simulated_results.available_liquidity_ratio:.2f}%",
         "agent_verdict": agent_feedback.verdict,
         "agent_advice": agent_feedback.summary,
+        # "logs": simulation_logs,
     }
 
     return SimulationResponse(

@@ -70,14 +70,6 @@ class SimulationResponse(BaseModel):
     simulated: AssetResults
     diff_summary: Dict[str, str]
 
-class SimulationAction(BaseModel):
-    field: str       # 想要修改的字段 eg:savings_cny
-    delta: Decimal   # 变化量 负数代表减少 正数代表增加
-
-class AdvancedSimulationRequest(BaseModel):
-    actions: List[SimulationAction]
-    notes: Optional[str] = "Decision Simulation"
-
 class SmartSuggestion:
     def __init__(
         self,
