@@ -34,6 +34,9 @@ from config import (
     FX_REFERENCE
 )
 from onchain_analyzer import generate_btc_onchain_report
+from utils import (
+    get_asset_info
+)
 
 app = FastAPI()
 redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
@@ -294,54 +297,52 @@ async def simulate_investment(
         if action.type == ActionType.ADJUST:
             if hasattr(simulated_snapshot, action.from_field):
                 old_val = getattr(simulated_snapshot, action.from_field) or Decimal('0')
-                logging.info(f"old_val: {old_val}, amount: {action.amount}")
                 new_val = Decimal(old_val) + action.amount
                 if new_val < 0: new_val = Decimal('0')
                 setattr(simulated_snapshot, action.from_field, new_val)
-                simulation_logs.append(f"Adjusted {action.from_field} by {action.amount}")
+
+                name = get_asset_info(action.from_field)['name']
+                # :+ 是什么含义呢
+                simulation_logs.append(f"Adjusted {name} by {action.amount:+}")
             else:
                 logging.warning(f"Field: {action.from_field} not found")
         elif action.type == ActionType.TRANSFER:
             if not action.to_field:
                 continue
 
-            if hasattr(simulated_snapshot, action.from_field):
-                src_val = getattr(simulated_snapshot, action.from_field) or Decimal('0')
-                transfer_amount = abs(action.amount)
+            field_src = action.from_field
+            field_dst = action.to_field
 
-                setattr(simulated_snapshot, action.from_field, src_val - transfer_amount)
+            info_src = get_asset_info(field_src)
+            info_dst = get_asset_info(field_dst)
 
-                # 1. 识别货币代码
-                src_code = get_currency_code_from_field(action.from_field)
-                target_code = get_currency_code_from_field(action.to_field)
+            src_balance = getattr(simulated_snapshot, field_src) or Decimal('0')
+            transfer_amount = abs(action.amount)
 
-                # 2. 获取对美元汇率
-                src_rate = rates.get(src_code, Decimal('0'))
-                target_rate = rates.get(target_code, Decimal('0'))
+            setattr(simulated_snapshot, field_src, src_balance - transfer_amount)
 
-                # 3. 处理黄金
-                src_unit_factor = get_unit_multiplier(action.from_field)
-                target_unit_factor = get_unit_multiplier(action.to_field)
+            rate_src = rates.get(info_src['currency'], Decimal('0'))
+            rate_dst = rates.get(info_dst['currency'], Decimal('0'))
 
-                if target_rate > 0:
-                    value_in_usd = transfer_amount * src_unit_factor * src_rate
+            scale_src = Decimal(str(info_src['unit_scale']))
+            scale_dst = Decimal(str(info_dst['unit_scale']))
 
-                    target_amount_delta = value_in_usd / (target_rate * target_unit_factor)
+            if rate_dst > 0:
+                value_in_usd = transfer_amount * scale_src * rate_src
 
-                    if hasattr(simulated_snapshot, action.to_field):
-                        target_old_val = getattr(simulated_snapshot, action.to_field) or Decimal('0')
-                        setattr(simulated_snapshot, action.to_field, target_old_val + target_amount_delta)
+                amount_dst = value_in_usd / (rate_dst * scale_dst)
+                dst_balance = getattr(simulated_snapshot, field_dst) or Decimal('0')
+                setattr(simulated_snapshot, field_dst, Decimal(dst_balance) + Decimal(amount_dst))
 
-                        simulation_logs.append(
-                            f"Transferred {transfer_amount} {src_code} -> {target_amount_delta:.4f} {target_code} "
-                            f"(Rate: {src_rate}/{target_rate})"
-                        )
-                else:
-                    logging.error(f"Invalid target rate for {target_code}")
-
+                log_msg = (
+                    f"划转: {info_src['name']} ({transfer_amount}) -> {info_dst['name']} ({amount_dst:.4f})"
+                )
+                simulation_logs.append(log_msg)
             
     # 4. 重新计算模拟后的指标
     simulated_results = calculate_asset_metrics(simulated_snapshot, rates, btc_risk)
+
+    logging.info(f"original: {current_snapshot.savings_cny}, sim: {simulated_snapshot.savings_cny}")
 
     # 5. 调用Agent获取模拟决策的意见
     sim_snapshot_dict = snapshot_to_dict(simulated_snapshot)

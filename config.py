@@ -105,3 +105,64 @@ ASSET_APY = {
     'savings_eur': 0.02,
     'deposit_gbp': 0.04
 }
+
+ASSET_CONFIG = {
+    # --- 人民币资产(CNY) ---
+    "savings_cny": {
+        "currency": "CNY", "risk": 0, "liquid": True, "unit_scale": 1.0, "name": "人民币储蓄"
+    },
+    "funds_cny": {
+        "currency": "CNY", "risk": 4, "liquid": False, "unit_scale": 1.0, "name": "人民币基金"
+    },
+    "retirement_funds_cny": {
+        "currency": "CNY", "risk": 2, "liquid": False, "unit_scale": 1.0, "name": "养老金"
+    },
+    "housing_fund_cny": {
+        "currency": "CNY", "risk": 0, "liquid": False, "unit_scale": 1.0, "name": "公积金"
+    },
+
+    # --- 美元资产(USD) ---
+    "savings_usd": {
+        "currency": "USD", "risk": 0, "liquid": True, "unit_scale": 1.0, "name": "美元储蓄"
+    },
+    "stock_usd": {
+        "currency": "USD", "risk": 6, "liquid": False, "unit_scale": 1.0, "name": "美股账户"
+    },
+    "btc_stock_usd": {
+        "currency": "USD", "risk": 9, "liquid": False, "unit_scale": 1.0, "name": "比特币股票"
+    },
+
+    # --- 贵金属/加密货币 ---
+    "gold_g": {
+        "currency": "XAU", "risk": 2, "liquid": False, "unit_scale": 1/31.1035, "name": "黄金(g)"
+    },
+    "gold_oz": {
+        "currency": "XAU", "risk": 2, "liquid": False, "unit_scale": 1.0, "name": "黄金(oz)"
+    },
+    "btc": {
+        "currency": "BTC", "risk": 10, "liquid": False, "unit_scale": 1.0, "name": "比特币"
+    },
+
+    # --- 其他外币 ---
+    "savings_hkd": {
+        "currency": "HKD", "risk": 0, "liquid": True, "unit_scale": 1.0, "name": "港币储蓄"
+    },
+    "funds_hkd": {
+        "currency": "HKD", "risk": 4, "liquid": False, "unit_scale": 1.0, "name": "港币基金"
+    },
+    "savings_sgd": {
+        "currency": "SGD", "risk": 0, "liquid": True, "unit_scale": 1.0, "name": "新元储蓄"
+    },
+    "funds_sgd": {
+        "currency": "SGD", "risk": 3, "liquid": False, "unit_scale": 1.0, "name": "新元基金"
+    },
+    "savings_eur": {
+        "currency": "EUR", "risk": 0, "liquid": True, "unit_scale": 1.0, "name": "欧元储蓄"
+    },
+    "funds_eur": {
+        "currency": "EUR", "risk": 3, "liquid": False, "unit_scale": 1.0, "name": "欧元基金"
+    },
+    "deposit_gbp": {
+        "currency": "GBP", "risk": 0, "liquid": False, "unit_scale": 1.0, "name": "英镑存款"
+    }
+}
