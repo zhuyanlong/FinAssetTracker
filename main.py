@@ -35,7 +35,8 @@ from config import (
 )
 from onchain_analyzer import generate_btc_onchain_report
 from utils import (
-    get_asset_info
+    get_asset_info,
+    get_usd_value
 )
 
 app = FastAPI()
@@ -303,6 +304,7 @@ async def simulate_investment(
             src_balance = getattr(simulated_snapshot, field_src) or Decimal('0')
             transfer_amount = Decimal(abs(action.amount))
             src_balance = Decimal(src_balance)
+            logging.info(f"field_src: {field_src}, field_dst: {field_dst}, info_src: {info_src}, info_dst: {info_dst}, src_balance:{src_balance}, transfer_amount {transfer_amount}")
 
             setattr(simulated_snapshot, field_src, src_balance - transfer_amount)
 
@@ -313,9 +315,9 @@ async def simulate_investment(
             scale_dst = Decimal(str(info_dst['unit_scale']))
 
             if rate_dst > 0:
-                value_in_usd = transfer_amount * scale_src * rate_src
+                value_in_usd = get_usd_value(transfer_amount, scale_src, rate_src)
 
-                amount_dst = value_in_usd / (rate_dst * scale_dst)
+                amount_dst = value_in_usd * rate_dst / scale_dst
                 dst_balance = getattr(simulated_snapshot, field_dst) or Decimal('0')
                 setattr(simulated_snapshot, field_dst, Decimal(dst_balance) + Decimal(amount_dst))
 
