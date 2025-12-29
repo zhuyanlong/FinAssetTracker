@@ -1,177 +1,110 @@
-from decimal import Decimal, ROUND_HALF_UP
+import logging
+
+from decimal import Decimal
 from models import AssetSnapshot, AssetResults
-from config import RISK_WEIGHTS, ASSET_APY 
-from utils import get_usd_value, get_gold_value, get_value
+from config import ASSET_CONFIG
+from utils import get_usd_value
 
 def calculate_asset_metrics(data: AssetSnapshot, rates: dict, btc_risk_score: Decimal) -> AssetResults:
-    cny_total = get_value(data.retirement_funds_cny) + get_value(data.funds_cny) + get_value(data.savings_cny) + get_value(data.housing_fund_cny)
-    eur_total = get_value(data.savings_eur) + get_value(data.funds_eur)
-    sgd_total = get_value(data.savings_sgd) + get_value(data.funds_sgd)
-    hkd_total = get_value(data.savings_hkd) + get_value(data.funds_hkd)
+    total_assets_usd = Decimal('0')
+    total_savings_usd = Decimal('0')
 
-    values_in_usd = {
-        'gold': get_gold_value(get_value(data.gold_g), get_value(data.gold_oz), rates['XAU']),
-        'cny': get_usd_value(cny_total, rates['CNY']),
-        'gbp': get_usd_value(get_value(data.deposit_gbp), rates['GBP']),
-        'eur': get_usd_value(eur_total, rates['EUR']),
-        'sgd': get_usd_value(sgd_total, rates['SGD']),
-        'hkd': get_usd_value(hkd_total, rates['HKD']),
-        
-        'btc': get_usd_value(get_value(data.btc), rates['BTC']) + get_value(data.btc_stock_usd),
-        
-        'usd': get_value(data.savings_usd) + get_value(data.stock_usd)
-    }
+    gold_val_usd = Decimal('0')
+    btc_val_usd = Decimal('0')
+    currency_exposure = {} # 货币敞口计算
 
-    savings_in_usd = {
-        'cny': get_usd_value(get_value(data.savings_cny), rates['CNY']),
-        'eur': get_usd_value(get_value(data.savings_eur), rates['EUR']),
-        'sgd': get_usd_value(get_value(data.savings_sgd), rates['SGD']),
-        'hkd': get_usd_value(get_value(data.savings_hkd), rates['HKD']),
-        'usd': get_value(data.savings_usd)
-    }
+    asset_dict = data.model_dump()
 
-    total_assets_usd = sum(values_in_usd.values())
-    total_savings_usd = sum(savings_in_usd.values())
+    for field, amount in asset_dict.items():
+        if amount is None or field == 'id' or field == 'snapshot_date':
+            continue
 
-    if total_assets_usd == Decimal('0'):
-        available_liquidity_ratio = Decimal('0')
-        gold_ratio = Decimal('0')
-        btc_ratio = Decimal('0')
-    else:
-        available_liquidity_ratio = total_savings_usd / total_assets_usd * 100
-        gold_ratio = values_in_usd['gold'] / total_assets_usd * 100 
-        total_btc_usd = values_in_usd['btc']
-        btc_ratio = total_btc_usd / total_assets_usd * 100
+        amount_dec = Decimal(str(amount))
+        if amount_dec == 0: 
+            continue
 
-    risk_weighted_sum = Decimal('0')
-    # 1. 现金类(储蓄 + 存款)
-    cash_val = (
-        get_usd_value(get_value(data.savings_cny), rates['CNY']) +
-        get_usd_value(get_value(data.savings_eur), rates['EUR']) +
-        get_usd_value(get_value(data.savings_sgd), rates['SGD']) +
-        get_usd_value(get_value(data.savings_hkd), rates['HKD']) +
-        get_usd_value(get_value(data.deposit_gbp), rates['GBP']) +
-        get_value(data.savings_usd)
-    )
+        config = ASSET_CONFIG.get(field)
 
-    risk_weighted_sum += cash_val * RISK_WEIGHTS['savings']
-    # 2. 政策性资产(公积金 + 养老金)
-    policy_val = get_usd_value(get_value(data.housing_fund_cny) + get_value(data.retirement_funds_cny), rates['CNY'])
-    risk_weighted_sum += policy_val * RISK_WEIGHTS['housing']
+        if not config:
+            continue
 
-    # 3. 基金类(混合型基金)
-    funds_val = (
-        get_usd_value(get_value(data.funds_cny), rates['CNY']) +
-        get_usd_value(get_value(data.funds_eur), rates['EUR']) +
-        get_usd_value(get_value(data.funds_hkd), rates['HKD']) +
-        get_usd_value(get_value(data.funds_sgd), rates['SGD'])
-    )
-    risk_weighted_sum += funds_val * RISK_WEIGHTS['funds_mixed']
+        currency =  config['currency']
+        is_liquid_flag = config['liquid']
+        unit_scale = Decimal(str(config.get('unit_scale', 1.0)))
 
-    # 4. 黄金
-    risk_weighted_sum += values_in_usd['gold'] * RISK_WEIGHTS['gold']
+        rate = rates.get(currency, Decimal('0'))
+        usd_value = get_usd_value(amount_dec, unit_scale, rate)
 
-    # 5. 股票
-    risk_weighted_sum += get_value(data.stock_usd) * RISK_WEIGHTS['stock']
+        total_assets_usd += usd_value
 
-    # 6. 比特币(直接持有 + 相关股票持有)
-    btc_val = values_in_usd['btc']
-    risk_weighted_sum += btc_val * btc_risk_score
+        if is_liquid_flag:
+            total_savings_usd += usd_value
 
-    # 计算最终加权分数
+        if 'gold' in field:
+            gold_val_usd += usd_value
+
+        if 'btc' in field:
+            btc_val_usd += usd_value
+
+        currency_exposure[currency] = currency_exposure.get(currency, Decimal('0')) + usd_value
+    logging.info(f"total_assets_usd is {total_assets_usd}")
+    available_liquidity_ratio = Decimal('0')
+    if total_assets_usd > 0:
+        available_liquidity_ratio = (total_savings_usd / total_assets_usd) * 100
+
+    gold_ratio = Decimal('0')
+    if total_assets_usd > 0:
+        gold_ratio = (gold_val_usd / total_assets_usd) * 100
+
+    btc_ratio = Decimal('0')
+    if total_assets_usd > 0:
+        btc_ratio = (btc_val_usd / total_assets_usd) * 100
+
+    weighted_risk_sum = Decimal('0')
+    speculative_sum = Decimal('0')
+
+    for field, amount in asset_dict.items():
+        if field not in ASSET_CONFIG or amount == 0:
+            continue
+
+        config = ASSET_CONFIG[field]
+        amount_dec = Decimal(str(amount))
+
+        rate = rates.get(config['currency'], Decimal('0'))
+        unit_scale = Decimal(str(config.get('unit_scale', 1.0)))
+        val_usd = get_usd_value(amount_dec, unit_scale, rate)
+
+        risk_score = Decimal(config['risk'])
+        if 'btc' in field and btc_risk_score > 0:
+            risk_score = btc_risk_score
+
+        weighted_risk_sum += val_usd * risk_score
+
+        # 投机资产
+        if risk_score > 5:
+            speculative_sum += val_usd
+
+    logging.info(f"weighted_risk_sum is {weighted_risk_sum}, speculative_sum is {speculative_sum}")
     weighted_risk_score = Decimal('0')
+    speculative_ratio = Decimal('0')
+
     if total_assets_usd > 0:
-        weighted_risk_score = risk_weighted_sum / total_assets_usd
+        weighted_risk_score = weighted_risk_sum / total_assets_usd
+        speculative_ratio = (speculative_sum / total_assets_usd) * 100
 
-    # 计算投机比例
-    speculative_assets = Decimal('0')
-    speculative_assets += values_in_usd['gold'] * RISK_WEIGHTS['gold'] / Decimal('10')
-    speculative_assets += get_value(data.stock_usd) * RISK_WEIGHTS['stock'] / Decimal('10')
-    speculative_assets += btc_val * RISK_WEIGHTS['btc'] / Decimal('10')
-    values_in_usd['gold'] + get_value(data.stock_usd) + btc_val
+    currency_dist_final = {}
     if total_assets_usd > 0:
-        speculative_ratio = (speculative_assets / total_assets_usd) * 100
-
-    # 外汇占比计算
-    # 1. 计算各种货币资产的USD价值
-    cny_exposure_usd = get_usd_value(cny_total, rates['CNY'])
-    usd_exposure_usd = get_value(data.savings_usd) + get_value(data.stock_usd) + get_value(data.btc_stock_usd)
-    hkd_exposure_usd = get_usd_value(hkd_total, rates['HKD'])
-    sgd_exposure_usd = get_usd_value(sgd_total, rates['SGD'])
-    eur_exposure_usd = get_usd_value(eur_total, rates['EUR'])
-    gbp_exposure_usd = get_usd_value(get_value(data.deposit_gbp), rates['GBP'])
-
-    gold_exposure_usd = values_in_usd['gold']
-    btc_exposure_usd = get_usd_value(get_value(data.btc), rates['BTC'])
-
-    # 2. 计算货币分布百分比
-    currency_dist = {}
-    if total_assets_usd > 0:
-        currency_dist = {
-            "CNY": (cny_exposure_usd / total_assets_usd) * 100,
-            "USD": (usd_exposure_usd / total_assets_usd) * 100,
-            "HKD": (hkd_exposure_usd / total_assets_usd) * 100,
-            "SGD": (sgd_exposure_usd / total_assets_usd) * 100,
-            "EUR": (eur_exposure_usd / total_assets_usd) * 100,
-            "GBP": (gbp_exposure_usd / total_assets_usd) * 100,
-            "GOLD": (gold_exposure_usd / total_assets_usd) * 100,
-            "BTC": (btc_exposure_usd / total_assets_usd) * 100
-        }
-
-    currency_dist = {k: round(v, 2) for k, v in currency_dist.items() if v > 0.01}
-
-    monthly_income = calculate_projected_monthly_income(data, rates)
-    monthly_income_rounded = monthly_income.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-
-    results = AssetResults(
+        for curr, val in currency_exposure.items():
+            pct = (val / total_assets_usd) * 100
+            if pct > 0.01:
+                currency_dist_final[curr] = float(round(pct, 2))
+    return AssetResults(
         total_assets_usd=total_assets_usd,
         total_savings_usd=total_savings_usd,
         available_liquidity_ratio=available_liquidity_ratio,
         gold_ratio=gold_ratio,
         btc_ratio=btc_ratio,
-
         weighted_risk_score=weighted_risk_score,
         speculative_ratio=speculative_ratio,
-        currency_distribution=currency_dist,
-        projected_monthly_income_usd=monthly_income_rounded,
-     )
-    return results
-
-def calculate_projected_monthly_income(snapshot: AssetSnapshot, rates: dict) -> Decimal:
-    """
-    计算预估的月度被动收入
-    """
-    total_monthly_income_usd = Decimal('0')
-
-    asset_dict = snapshot.model_dump()
-
-    for field, amount in asset_dict.items():
-        if not isinstance(amount, (int, float, Decimal)) or amount == 0:
-            continue
-
-        amount_decimal = Decimal(str(amount))
-
-        apy = Decimal(str(ASSET_APY.get(field, 0)))
-
-        if apy == 0:
-            continue
-
-        exchange_rate = Decimal('1')
-        if field.endswith('_cny'):
-            exchange_rate = rates.get('CNY', Decimal('0'))
-        elif field.endswith('_hkd'):
-            exchange_rate = rates.get('HKD', Decimal('0'))
-        elif field.endswith('_sgd'):
-            exchange_rate = rates.get('SGD', Decimal('0'))
-        elif field.endswith('_eur'):
-            exchange_rate = rates.get('EUR', Decimal('0'))
-        elif field.endswith('_gbp'):
-            exchange_rate = rates.get('GBP', Decimal('0'))
-
-        usd_value = amount_decimal * exchange_rate
-        monthly_income = (usd_value * apy) / Decimal('12')
-
-        total_monthly_income_usd += monthly_income
-
-    return total_monthly_income_usd
-
+        currency_distribution=currency_dist_final
+    )

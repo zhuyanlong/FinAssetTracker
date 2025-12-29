@@ -1,17 +1,11 @@
 from decimal import Decimal
-from config import GRAMS_TO_OUNCES_TROY, ASSET_CONFIG
+from config import ASSET_CONFIG
 
-def get_usd_value(money: Decimal, rate: Decimal):
-    return (Decimal('1') / rate) * money if rate != Decimal('0') else Decimal('0')
-
-def get_gold_value(grams: Decimal, oz: Decimal, rate: Decimal):
-    ounces = grams * GRAMS_TO_OUNCES_TROY + oz
-    return ounces * (Decimal('1') / rate) if rate != Decimal('0') else Decimal('0')
-
-def get_value(field) -> Decimal: 
-    if field is None or str(field) == "":
+def get_usd_value(money: Decimal, unit_scale: Decimal, rate: Decimal):
+    if rate != Decimal('0'):
+        return (Decimal('1') / rate) * money * unit_scale 
+    else:
         return Decimal('0')
-    return Decimal(str(field))
 
 def get_asset_info(field_name: str):
     return ASSET_CONFIG.get(field_name, {

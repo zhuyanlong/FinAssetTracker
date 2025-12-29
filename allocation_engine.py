@@ -1,3 +1,5 @@
+import logging
+
 from decimal import Decimal
 from typing import Dict, List
 from models import AssetResults, SmartSuggestion
@@ -44,6 +46,8 @@ def calculate_strategic_rebalancing(
     for k, v in current_dist.items():
         if k not in target_map:
             actual_other += v
+
+    logging.warning(f"actual_other is {actual_other}")
 
     if "OTHER" in target_map:
         mapped_current["OTHER"] = mapped_current.get("OTHER", Decimal(0)) + actual_other

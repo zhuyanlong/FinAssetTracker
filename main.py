@@ -53,24 +53,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def get_currency_code_from_field(field_name: str) -> str:
-    """根据字段名推断货币代码"""
-    field = field_name.lower()
-    if 'cny' in field: return 'CNY'
-    if 'hdk' in field: return 'HKD'
-    if 'sgd' in field: return 'SGD'
-    if 'eur' in field: return "EUR"
-    if 'gbp' in field: return 'GBP'
-    if 'btc' in field: return 'BTC'
-    if 'gold' in field: return 'XAU'
-    if 'usd' in field: return 'USD'
-    return 'USD'
-
-def get_unit_multiplier(field_name: str) -> Decimal:
-    if 'gold_g' in field_name:
-        return Decimal('1') / Decimal('31.1035')
-    return Decimal('1')
-
 def get_btc_risk_score(redis_client) -> Decimal:
     """从Redis获取风险分, 如果失败, 则计算并存入Redis"""
     cached_risk = redis_client.get(BTC_RISK_KEY)
@@ -144,7 +126,8 @@ async def update_assets(
             'EUR': get_exchange_rate('EUR'),
             'HKD': get_exchange_rate('HKD'),
             'BTC': get_exchange_rate('BTC'),
-            'SGD': get_exchange_rate('SGD')
+            'SGD': get_exchange_rate('SGD'),
+            'USD': get_exchange_rate('USD')
         }
         btc_risk_score = get_btc_risk_score(redis_client)
         results = calculate_asset_metrics(data, rates, btc_risk_score)
@@ -283,7 +266,8 @@ async def simulate_investment(
         'EUR': get_exchange_rate('EUR'),
         'HKD': get_exchange_rate('HKD'),
         'BTC': get_exchange_rate('BTC'),
-        'SGD': get_exchange_rate('SGD')
+        'SGD': get_exchange_rate('SGD'),
+        'USD': get_exchange_rate('USD')
     }
     btc_risk = get_btc_risk_score(redis_client)
     original_results = calculate_asset_metrics(current_snapshot, rates, btc_risk)

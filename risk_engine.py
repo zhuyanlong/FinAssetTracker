@@ -10,7 +10,6 @@ from config import (
     REDIS_PORT,
     REDIS_DB,
     BTC_RISK_KEY,
-    RISK_WEIGHTS,
     BTC_PAIR,
     BTC_INTERVAL_MINUTES, BTC_RISK_WEIGHTS,
     VOLATILITY_WINDOW,
@@ -26,7 +25,7 @@ def update_and_cache_btc_risk() -> Decimal:
     df = fetch_btc_history_kraken(pair=BTC_PAIR, interval_minutes=BTC_INTERVAL_MINUTES)
     if df is None or len(df) < MOD_WINDOW:
         logging.warning("数据不足, 使用默认配置的静态权重")
-        risk_score = RISK_WEIGHTS['btc']
+        risk_score = 10.0
     else:
         df_1y = df.tail(365).copy()
 
