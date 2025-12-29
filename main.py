@@ -301,7 +301,8 @@ async def simulate_investment(
             info_dst = get_asset_info(field_dst)
 
             src_balance = getattr(simulated_snapshot, field_src) or Decimal('0')
-            transfer_amount = abs(action.amount)
+            transfer_amount = Decimal(abs(action.amount))
+            src_balance = Decimal(src_balance)
 
             setattr(simulated_snapshot, field_src, src_balance - transfer_amount)
 
