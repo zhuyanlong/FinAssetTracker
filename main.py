@@ -3,7 +3,7 @@ import redis
 import logging
 import uvicorn
 
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from sqlmodel import Session, select, desc
@@ -23,7 +23,6 @@ from agent import analyze_snapshot_and_results, snapshot_to_dict
 from calculator import calculate_asset_metrics
 from allocation_engine import calculate_strategic_rebalancing
 from config import (
-    CACHE_KEY,
     REPORT_DIR,
     REDIS_HOST,
     REDIS_DB,
@@ -38,13 +37,18 @@ from utils import (
     get_asset_info,
     get_usd_value
 )
+from demo import demo_asset_snapshot
+from middleware.app_mode import AppModeMiddleware
 
 app = FastAPI()
 redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
 
 origins = [
     "https://asset.yanlongzhu.space",
+    "https://demo.yanlongzhu.space",
 ] 
+
+app.add_middleware(AppModeMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -53,6 +57,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+def get_cache_key(request: Request):
+    return "asset_data_private" if request.state.app_mode == "private" else "asset_data_public"
 
 def get_btc_risk_score(redis_client) -> Decimal:
     """从Redis获取风险分, 如果失败, 则计算并存入Redis"""
@@ -64,18 +71,18 @@ def get_btc_risk_score(redis_client) -> Decimal:
             logging.warning("Cached BTC risk factor is corrupted. Recalculating.")
     return update_and_cache_btc_risk()
 
-def save_to_redis(data: AssetSnapshot):
+def save_to_redis(data: AssetSnapshot, request: Request):
     try: 
         serializable_data = data.model_dump_json()
-        redis_client.set(CACHE_KEY, serializable_data)
+        redis_client.set(get_cache_key(request), serializable_data)
         return True
     except Exception as e:
         logging.error(f"Error saving to Redis: {str(e)}", exc_info=True)
         return False
 
-def load_from_redis() -> AssetSnapshot:
+def load_from_redis(request: Request) -> AssetSnapshot:
     try:
-        data = redis_client.get(CACHE_KEY)
+        data = redis_client.get(get_cache_key(request))
         if data:
             data_json_string = data.decode('utf-8')
             asset = AssetSnapshot.model_validate_json(data_json_string)
@@ -98,8 +105,15 @@ def on_startup():
     create_db_and_tables()
 
 @app.get("/", response_model=AssetSnapshot)
-def get_latest_asset_data(db: Session = Depends(get_db)):
-    cached_data = load_from_redis()
+def get_latest_asset_data(
+    request: Request,
+    db: Session = Depends(get_db),
+    ):
+    print(f"DEBUG: Current Mode from Header is: {request.state.app_mode}")
+    if request.state.app_mode == "public":
+        return demo_asset_snapshot()
+
+    cached_data = load_from_redis(request)
 
     if cached_data:
         return cached_data
@@ -109,17 +123,18 @@ def get_latest_asset_data(db: Session = Depends(get_db)):
 
     if not db_snapshot:
         raise HTTPException(status_code=404, detail="No asset data found in the database.")
-    save_to_redis(db_snapshot)
+    save_to_redis(db_snapshot, request)
     return db_snapshot
 
 @app.post("/update_assets", response_model=AssetResults)
 async def update_assets(
+    request: Request,
     data: AssetSnapshot,
     db: Session = Depends(get_db)
 ):
     try:
         # save data to redis
-        save_to_redis(data)
+        save_to_redis(data, request)
         rates = {
             'XAU': get_exchange_rate('XAU'),
             'CNY': get_exchange_rate('CNY'),
@@ -142,7 +157,10 @@ async def update_assets(
                 "source": "market_sentiment",
                 "type": "btc_fng"
             }
-            asset_vector_db.add_report(report_text=market_report_text, metadata=vector_metadata)
+            if request.state.app_mode == "private":
+                asset_vector_db.add_report(report_text=market_report_text, metadata=vector_metadata)
+            else:
+                logging.info("Public mode: skip vector storage")
         except Exception as e:
             logging.error(f"Vector DB storage failed: {e}")
 
@@ -200,8 +218,10 @@ async def update_assets(
                 "btc_ratio": float(results.btc_ratio),
                 "source": "automated_update"
             }
-
-            asset_vector_db.add_report(report_text=report_content, metadata=vector_metadata)
+            if request.state.app_mode == "private":
+                asset_vector_db.add_report(report_text=report_content, metadata=vector_metadata)
+            else:
+                logging.info("Public mode: skip vector storage")
 
         except Exception as e:
             logging.error(f"Vector DB storage failed: {e}")
@@ -212,9 +232,12 @@ async def update_assets(
         results.report_path = filename_only
         results.message = f"{agent_out.summary}\n\n【量化策略建议】:\n{formatted_strategy_text}"
 
-        db.add(data)
-        db.commit()
-        db.refresh(data)
+        if request.state.app_mode == "public":
+            logging.info("Public mode: skip DB persistence")
+        else:
+            db.add(data)
+            db.commit()
+            db.refresh(data)
 
         return results
     
@@ -223,19 +246,26 @@ async def update_assets(
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 @app.get("/clear")
-async def clear_data(db: Session = Depends(get_db)):
+async def clear_data(
+    request: Request,
+    db: Session = Depends(get_db),
+    ):
+    if request.state.app_mode == "public":
+        raise HTTPException(403, "Not available in public mode")
     try:
-        redis_client.delete(CACHE_KEY)
+        redis_client.delete(get_cache_key(request))
         return {"message": "Data cache cleared successfully."}
     except Exception as e:
         logging.error(f"Redis clear error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to clear Redis cache.")
 
 @app.get("/download_report/{filename}")
-def download_report(filename: str):
+def download_report(filename: str, request: Request):
     """
     接收文件名，从'reports'目录读取文件，并将其发送给客户端下载
     """
+    if request.state.app_mode == "public":
+        raise HTTPException(403, "Not available in public mode")
     filepath = os.path.join(REPORT_DIR, filename)
     if not os.path.exists(filepath):
         raise HTTPException(status_code=404, detail="Report file not found.")
@@ -248,11 +278,12 @@ def download_report(filename: str):
 
 @app.post("/simulate", response_model=SimulationResponse)
 async def simulate_investment(
-    request: AdvancedSimulationRequest,
+    payload: AdvancedSimulationRequest,
+    request: Request,
     db: Session = Depends(get_db)
 ):
     # 1. 获取基准数据
-    current_snapshot = load_from_redis()
+    current_snapshot = load_from_redis(request)
     if not current_snapshot:
         statement = select(AssetSnapshot).order_by(desc(AssetSnapshot.id)).limit(1)
         current_snapshot = db.exec(statement).first()
@@ -278,7 +309,7 @@ async def simulate_investment(
 
     simulation_logs = [] # 用于记录转换过程
 
-    for action in request.actions:
+    for action in payload.actions:
         if action.type == ActionType.ADJUST:
             if hasattr(simulated_snapshot, action.from_field):
                 old_val = getattr(simulated_snapshot, action.from_field) or Decimal('0')
@@ -341,7 +372,7 @@ async def simulate_investment(
     }
 
     sim_context = {
-        "note": f"SIMULATION ONLY: {request.notes}",
+        "note": f"SIMULATION ONLY: {payload.notes}",
         "actions_log": "; ".join(simulation_logs)
     }
 

@@ -15,7 +15,6 @@ os.makedirs(REPORT_DIR, exist_ok=True)
 REDIS_HOST = 'localhost'
 REDIS_PORT = 6379
 REDIS_DB = 0
-CACHE_KEY = 'asset_data'
 
 # Redis Key for BTC Risk Factor
 BTC_RISK_KEY = 'btc_volatility_risk_score'
